@@ -1,12 +1,15 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type typeMapping struct {
-	PGType       string
-	Name         string
-	NullableName string
-	Module       string
+	PGType       string `json:"pgType"`
+	Name         string `json:"name"`
+	NullableName string `json:"nullableName"`
+	Module       string `json:"module"`
 }
 
 var types = func() map[string]typeMapping {
@@ -53,8 +56,13 @@ var types = func() map[string]typeMapping {
 
 func pgTypeToGoType(pgType string) typeMapping {
 	l, ok := types[pgType]
-	if !ok {
-		panic(fmt.Errorf("Not supported postgres type: %s", pgType))
+	if ok {
+		return l
 	}
-	return l
+	log.Print(fmt.Errorf("Not supported postgres type: %s", pgType))
+	return typeMapping{
+		PGType:       pgType,
+		Name:         "[]byte",
+		NullableName: "[]byte",
+	}
 }
