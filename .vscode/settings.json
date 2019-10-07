@@ -1,0 +1,4 @@
+{
+  "go.testEnvFile": "${workspaceFolder}/.env",
+  "files.associations": { "*.go.tmpl": "go" }
+}
