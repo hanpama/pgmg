@@ -71,11 +71,13 @@ func main() {
 		args.Base64Slice = append(args.Base64Slice, string(b[:n]))
 	}
 
-	f, err := os.OpenFile(out, os.O_CREATE|os.O_RDWR, os.ModePerm)
-	if err != nil {
+	r.Reset()
+	if err := tmpl.ExecuteTemplate(&r, "fstr", args); err != nil {
 		panic(err)
 	}
-	if err := tmpl.ExecuteTemplate(f, "fstr", args); err != nil {
+
+	err = ioutil.WriteFile(out, r.Bytes(), os.ModePerm)
+	if err != nil {
 		panic(err)
 	}
 }
