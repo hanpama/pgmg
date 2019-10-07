@@ -9,18 +9,18 @@ import (
 	"github.com/knq/snaker"
 )
 
-func RenderModel(t *Table) ([]byte, error) {
+func RenderTableModel(t *Table) ([]byte, error) {
 	var buff bytes.Buffer
-	err := templates.Tmpl.ExecuteTemplate(&buff, "model", &model{t})
+	err := templates.Tmpl.ExecuteTemplate(&buff, "table_model", &model{t})
 	if err != nil {
 		return nil, err
 	}
 	return format.Source(buff.Bytes())
 }
 
-func RenderQuery(t *Table) ([]byte, error) {
+func RenderTableQuery(t *Table) ([]byte, error) {
 	var buff bytes.Buffer
-	err := templates.Tmpl.ExecuteTemplate(&buff, "query", &model{t})
+	err := templates.Tmpl.ExecuteTemplate(&buff, "table_query", &model{t})
 	if err != nil {
 		return nil, err
 	}
