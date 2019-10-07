@@ -7,6 +7,7 @@ import (
 	"github.com/hanpama/pgmg/example/northwind/public/customers"
 	"github.com/hanpama/pgmg/example/northwind/public/employee_territories"
 	"github.com/hanpama/pgmg/example/northwind/public/us_states"
+	"github.com/hanpama/pgmg/example/northwind/queries/domestic_order"
 )
 
 func TestModelScanning(t *testing.T) {
@@ -146,5 +147,26 @@ func TestDeleteBySimpleKey(t *testing.T) {
 			t.Fatal(err)
 		}
 		assertDeepEqual(t, count, 0)
+	})
+}
+
+func TestQuery(t *testing.T) {
+	withTx(func(tx *sql.Tx) {
+		country := "Italy"
+		var num int64 = 10
+		q := domestic_order.Query(&country, &num)
+		var recordset domestic_order.Recordset
+
+		rows, err := tx.Query(q.SQL(), q.Args()...)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for rows.Next() {
+			err = rows.Scan(recordset.ReceiveNext()...)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		testJSONSnapshot(t, "TestQuery", recordset)
 	})
 }

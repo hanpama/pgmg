@@ -24,6 +24,15 @@ type Query struct {
 	Returning  []Column
 }
 
+func (qi *Query) Dependencies() (mods []string) {
+	for _, col := range qi.Returning {
+		if mod := pgTypeToGoType(col.DataType).Module; mod != "" {
+			mods = append(mods, mod)
+		}
+	}
+	return mods
+}
+
 func (qi *Query) QueryComment() string {
 	res := "// Query queries"
 	for _, line := range strings.Split(qi.SQL, "\n") {

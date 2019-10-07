@@ -119,12 +119,15 @@ func runQueryMode(dbURL, glob string) {
 			panic(err)
 		}
 		query := string(b)
-		qi, err := internal.IntrospectQuery(tx, fp, query)
+		qi, err := internal.IntrospectQuery(tx, name, query)
 		if err != nil {
 			panic(err)
 		}
 
 		b, err = internal.RenderQuery(&qi)
+		if err != nil {
+			panic(err)
+		}
 
 		dir := filepath.Join(filepath.Dir(fp), name)
 
