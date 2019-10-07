@@ -9,16 +9,6 @@ import (
 	"github.com/knq/snaker"
 )
 
-// var funcs = template.FuncMap{
-// 	"sqlParam": func(n int) string { return fmt.Sprintf("$%d", n+1) },
-// }
-// var modelTmpl = template.Must(
-// 	template.New("model.go.tmpl").Funcs(funcs).ParseFiles("templates/model.go.tmpl"),
-// )
-// var queryTmpl = template.Must(
-// 	template.New("query.go.tmpl").Funcs(funcs).ParseFiles("templates/query.go.tmpl"),
-// )
-
 func RenderModel(t *Table) ([]byte, error) {
 	var buff bytes.Buffer
 	err := templates.Tmpl.ExecuteTemplate(&buff, "model", &model{t})

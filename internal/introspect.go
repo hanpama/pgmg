@@ -29,7 +29,7 @@ type Key struct {
 	Columns []Column `json:"columns"`
 }
 
-func Introspect(db *sql.DB, schema string) ([]Table, error) {
+func Introspect(db *sql.Tx, schema string) ([]Table, error) {
 	var (
 		tables []Table
 		b      []byte

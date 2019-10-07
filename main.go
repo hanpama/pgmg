@@ -4,6 +4,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
@@ -12,7 +13,20 @@ import (
 	_ "github.com/lib/pq"
 )
 
+const help = `usage: pgmg <connection_string> <schema_name> <outdir>
+
+See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
+for more information about connection string parameters.
+
+example: pgmg 'user=postgres dbname=pgmg sslmode=disable' public example/northwind/public
+`
+
 func main() {
+	if len(os.Args) != 4 {
+		fmt.Fprintf(os.Stdin, help)
+		fmt.Fprint(os.Stderr, "Invalid number of arguments")
+		return
+	}
 	dbURL := os.Args[1]
 	schema := os.Args[2]
 	outDir := os.Args[3]
@@ -21,7 +35,12 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	tables, err := internal.Introspect(db, schema)
+	tx, err := db.Begin()
+	if err != nil {
+		panic(err)
+	}
+	defer tx.Rollback()
+	tables, err := internal.Introspect(tx, schema)
 	if err != nil {
 		panic(err)
 	}
