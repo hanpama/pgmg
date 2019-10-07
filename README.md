@@ -12,7 +12,11 @@ usage: pgmg <connection_string> <schema_name> <outdir>
 See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 for more information about connection string parameters.
 
-example: go run github.com/hanpama/pgmg 'user=postgres dbname=pgmg sslmode=disable' public public
+Tables generation:
+  go run github.com/hanpama/pgmg table 'user=postgres dbname=pgmg sslmode=disable' public public
+
+Query generation:
+  go run github.com/hanpama/pgmg query 'user=postgres dbname=pgmg sslmode=disable' 'example/northwind/queries/*.sql'
 ```
 
 ## Example
