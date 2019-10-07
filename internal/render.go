@@ -62,9 +62,15 @@ type property struct {
 }
 
 func (p *property) CapitalName() string { return snaker.ForceCamelIdentifier(p.c.Name) }
-func (p *property) LowerName() string   { return snaker.ForceLowerCamelIdentifier(p.c.Name) }
-func (p *property) SQLName() string     { return p.c.Name }
-func (p *property) BaseType() string    { return p.t.Name }
+func (p *property) LowerName() string {
+	name := snaker.ForceLowerCamelIdentifier(p.c.Name)
+	if _, ok := reservedWords[name]; ok {
+		return "_" + name
+	}
+	return name
+}
+func (p *property) SQLName() string  { return p.c.Name }
+func (p *property) BaseType() string { return p.t.Name }
 func (p *property) SelectType() string {
 	if p.c.IsNullable {
 		return p.t.NullableName
@@ -83,4 +89,12 @@ func (k *key) Properties() (props []property) {
 		props = append(props, property{&k.k.Columns[i], pgTypeToGoType(k.k.Columns[i].DataType)})
 	}
 	return props
+}
+
+var reservedWords = map[string]bool{
+	"break": true, "default": true, "func": true, "interface": true, "select": true,
+	"case": true, "defer": true, "go": true, "map": true, "struct": true,
+	"chan": true, "else": true, "goto": true, "package": true, "switch": true,
+	"const": true, "fallthrough": true, "if": true, "range": true, "type": true,
+	"continue": true, "for": true, "import": true, "return": true, "var": true,
 }
