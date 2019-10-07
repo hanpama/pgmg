@@ -7,7 +7,8 @@ Introspection based PostgreSQL model generator
 * Update with changeset
 
 ```
-usage: pgmg <connection_string> <schema_name> <outdir>
+usage: pgmg table <connection_string> <schema_name> <outdir>
+	OR pgmg query <connection_string> <sql_glob>
 
 See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 for more information about connection string parameters.
