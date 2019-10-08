@@ -19,12 +19,26 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "employee_territories"
-		SELECT * FROM json_populate_recordset(null::"employee_territories", $1) `
+		INSERT INTO "public"."employee_territories" (
+			"employee_id",
+			"territory_id"
+		)
+		SELECT
+			"employee_id",
+			"territory_id"
+		FROM json_populate_recordset(null::"public"."employee_territories", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "employee_territories"
-		SELECT * FROM json_populate_recordset(null::"employee_territories", $1)
-		RETURNING *`
+		INSERT INTO "public"."employee_territories" (
+			"employee_id",
+			"territory_id"
+		)
+		SELECT
+			"employee_id",
+			"territory_id"
+		FROM json_populate_recordset(null::"public"."employee_territories", $1)
+		RETURNING
+			"employee_id",
+			"territory_id"`
 )
 
 func (k PkEmployeeTerritories) selectSQL() Query {
@@ -49,17 +63,17 @@ func (k PkEmployeeTerritories) deleteSQL() Query {
 
 const (
 	SelectPkEmployeeTerritories = `
-		SELECT * FROM "employee_territories" WHERE ("employee_territories"."employee_id", "employee_territories"."territory_id") = ($1, $2) LIMIT 1
+		SELECT * FROM "public"."employee_territories" WHERE ("employee_id", "territory_id") = ($1, $2) LIMIT 1
 		`
 	UpdatePkEmployeeTerritories = `
-		UPDATE "employee_territories"
-		SET "employee_id" = COALESCE(_ch."employee_id", "employee_territories"."employee_id"),
-			"territory_id" = COALESCE(_ch."territory_id", "employee_territories"."territory_id")
-		FROM (SELECT * FROM json_populate_record(null::"employee_territories", $2)) _ch
-		WHERE ("employee_territories"."employee_id", "employee_territories"."territory_id") = ($1, $2)`
+		UPDATE "public"."employee_territories" __ut__
+		SET "employee_id" = COALESCE(__ch__."employee_id", __ut__."employee_id"),
+			"territory_id" = COALESCE(__ch__."territory_id", __ut__."territory_id")
+		FROM (SELECT * FROM json_populate_record(null::"public"."employee_territories", $2)) __ch__
+		WHERE (__ut__."employee_id", __ut__."territory_id") = ($1, $2)`
 	DeletePkEmployeeTerritories = `
-		DELETE FROM "employee_territories"
-		WHERE ("employee_territories"."employee_id", "employee_territories"."territory_id") = ($1, $2)`
+		DELETE FROM "public"."employee_territories"
+		WHERE ("employee_id", "territory_id") = ($1, $2)`
 )
 
 type key interface {

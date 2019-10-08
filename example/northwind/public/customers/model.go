@@ -37,8 +37,17 @@ type Fax string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.CustomerID, &r.CompanyName, &r.ContactName, &r.ContactTitle, &r.Address, &r.City,
-		&r.Region, &r.PostalCode, &r.Country, &r.Phone, &r.Fax,
+		&r.CustomerID,
+		&r.CompanyName,
+		&r.ContactName,
+		&r.ContactTitle,
+		&r.Address,
+		&r.City,
+		&r.Region,
+		&r.PostalCode,
+		&r.Country,
+		&r.Phone,
+		&r.Fax,
 	}
 }
 
@@ -54,18 +63,12 @@ type Values []attribute
 func InputValues(
 	customerID CustomerID,
 	companyName CompanyName,
-	contactName ContactName,
-	contactTitle ContactTitle,
-	address Address,
-	city City,
-	region Region,
-	postalCode PostalCode,
-	country Country,
-	phone Phone,
-	fax Fax,
 	attrs ...attribute,
 ) Values {
-	return append(Values{customerID, companyName, contactName, contactTitle, address, city, region, postalCode, country, phone, fax}, attrs...)
+	return append(Values{
+		customerID,
+		companyName,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

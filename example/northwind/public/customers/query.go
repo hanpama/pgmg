@@ -19,12 +19,71 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "customers"
-		SELECT * FROM json_populate_recordset(null::"customers", $1) `
+		INSERT INTO "public"."customers" (
+			"customer_id",
+			"company_name",
+			"contact_name",
+			"contact_title",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"phone",
+			"fax"
+		)
+		SELECT
+			"customer_id",
+			"company_name",
+			"contact_name",
+			"contact_title",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"phone",
+			"fax"
+		FROM json_populate_recordset(null::"public"."customers", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "customers"
-		SELECT * FROM json_populate_recordset(null::"customers", $1)
-		RETURNING *`
+		INSERT INTO "public"."customers" (
+			"customer_id",
+			"company_name",
+			"contact_name",
+			"contact_title",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"phone",
+			"fax"
+		)
+		SELECT
+			"customer_id",
+			"company_name",
+			"contact_name",
+			"contact_title",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"phone",
+			"fax"
+		FROM json_populate_recordset(null::"public"."customers", $1)
+		RETURNING
+			"customer_id",
+			"company_name",
+			"contact_name",
+			"contact_title",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"phone",
+			"fax"`
 )
 
 func (k PkCustomers) selectSQL() Query {
@@ -46,26 +105,26 @@ func (k PkCustomers) deleteSQL() Query {
 
 const (
 	SelectPkCustomers = `
-		SELECT * FROM "customers" WHERE ("customers"."customer_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."customers" WHERE ("customer_id") = ($1) LIMIT 1
 		`
 	UpdatePkCustomers = `
-		UPDATE "customers"
-		SET "customer_id" = COALESCE(_ch."customer_id", "customers"."customer_id"),
-			"company_name" = COALESCE(_ch."company_name", "customers"."company_name"),
-			"contact_name" = COALESCE(_ch."contact_name", "customers"."contact_name"),
-			"contact_title" = COALESCE(_ch."contact_title", "customers"."contact_title"),
-			"address" = COALESCE(_ch."address", "customers"."address"),
-			"city" = COALESCE(_ch."city", "customers"."city"),
-			"region" = COALESCE(_ch."region", "customers"."region"),
-			"postal_code" = COALESCE(_ch."postal_code", "customers"."postal_code"),
-			"country" = COALESCE(_ch."country", "customers"."country"),
-			"phone" = COALESCE(_ch."phone", "customers"."phone"),
-			"fax" = COALESCE(_ch."fax", "customers"."fax")
-		FROM (SELECT * FROM json_populate_record(null::"customers", $2)) _ch
-		WHERE ("customers"."customer_id") = ($1)`
+		UPDATE "public"."customers" __ut__
+		SET "customer_id" = COALESCE(__ch__."customer_id", __ut__."customer_id"),
+			"company_name" = COALESCE(__ch__."company_name", __ut__."company_name"),
+			"contact_name" = COALESCE(__ch__."contact_name", __ut__."contact_name"),
+			"contact_title" = COALESCE(__ch__."contact_title", __ut__."contact_title"),
+			"address" = COALESCE(__ch__."address", __ut__."address"),
+			"city" = COALESCE(__ch__."city", __ut__."city"),
+			"region" = COALESCE(__ch__."region", __ut__."region"),
+			"postal_code" = COALESCE(__ch__."postal_code", __ut__."postal_code"),
+			"country" = COALESCE(__ch__."country", __ut__."country"),
+			"phone" = COALESCE(__ch__."phone", __ut__."phone"),
+			"fax" = COALESCE(__ch__."fax", __ut__."fax")
+		FROM (SELECT * FROM json_populate_record(null::"public"."customers", $2)) __ch__
+		WHERE (__ut__."customer_id") = ($1)`
 	DeletePkCustomers = `
-		DELETE FROM "customers"
-		WHERE ("customers"."customer_id") = ($1)`
+		DELETE FROM "public"."customers"
+		WHERE ("customer_id") = ($1)`
 )
 
 type key interface {

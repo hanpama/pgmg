@@ -19,12 +19,26 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "customer_demographics"
-		SELECT * FROM json_populate_recordset(null::"customer_demographics", $1) `
+		INSERT INTO "public"."customer_demographics" (
+			"customer_type_id",
+			"customer_desc"
+		)
+		SELECT
+			"customer_type_id",
+			"customer_desc"
+		FROM json_populate_recordset(null::"public"."customer_demographics", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "customer_demographics"
-		SELECT * FROM json_populate_recordset(null::"customer_demographics", $1)
-		RETURNING *`
+		INSERT INTO "public"."customer_demographics" (
+			"customer_type_id",
+			"customer_desc"
+		)
+		SELECT
+			"customer_type_id",
+			"customer_desc"
+		FROM json_populate_recordset(null::"public"."customer_demographics", $1)
+		RETURNING
+			"customer_type_id",
+			"customer_desc"`
 )
 
 func (k PkCustomerDemographics) selectSQL() Query {
@@ -46,17 +60,17 @@ func (k PkCustomerDemographics) deleteSQL() Query {
 
 const (
 	SelectPkCustomerDemographics = `
-		SELECT * FROM "customer_demographics" WHERE ("customer_demographics"."customer_type_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."customer_demographics" WHERE ("customer_type_id") = ($1) LIMIT 1
 		`
 	UpdatePkCustomerDemographics = `
-		UPDATE "customer_demographics"
-		SET "customer_type_id" = COALESCE(_ch."customer_type_id", "customer_demographics"."customer_type_id"),
-			"customer_desc" = COALESCE(_ch."customer_desc", "customer_demographics"."customer_desc")
-		FROM (SELECT * FROM json_populate_record(null::"customer_demographics", $2)) _ch
-		WHERE ("customer_demographics"."customer_type_id") = ($1)`
+		UPDATE "public"."customer_demographics" __ut__
+		SET "customer_type_id" = COALESCE(__ch__."customer_type_id", __ut__."customer_type_id"),
+			"customer_desc" = COALESCE(__ch__."customer_desc", __ut__."customer_desc")
+		FROM (SELECT * FROM json_populate_record(null::"public"."customer_demographics", $2)) __ch__
+		WHERE (__ut__."customer_type_id") = ($1)`
 	DeletePkCustomerDemographics = `
-		DELETE FROM "customer_demographics"
-		WHERE ("customer_demographics"."customer_type_id") = ($1)`
+		DELETE FROM "public"."customer_demographics"
+		WHERE ("customer_type_id") = ($1)`
 )
 
 type key interface {

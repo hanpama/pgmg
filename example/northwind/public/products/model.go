@@ -35,8 +35,16 @@ type Discontinued int32
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.ProductID, &r.ProductName, &r.SupplierID, &r.CategoryID, &r.QuantityPerUnit, &r.UnitPrice,
-		&r.UnitsInStock, &r.UnitsOnOrder, &r.ReorderLevel, &r.Discontinued,
+		&r.ProductID,
+		&r.ProductName,
+		&r.SupplierID,
+		&r.CategoryID,
+		&r.QuantityPerUnit,
+		&r.UnitPrice,
+		&r.UnitsInStock,
+		&r.UnitsOnOrder,
+		&r.ReorderLevel,
+		&r.Discontinued,
 	}
 }
 
@@ -52,17 +60,14 @@ type Values []attribute
 func InputValues(
 	productID ProductID,
 	productName ProductName,
-	supplierID SupplierID,
-	categoryID CategoryID,
-	quantityPerUnit QuantityPerUnit,
-	unitPrice UnitPrice,
-	unitsInStock UnitsInStock,
-	unitsOnOrder UnitsOnOrder,
-	reorderLevel ReorderLevel,
 	discontinued Discontinued,
 	attrs ...attribute,
 ) Values {
-	return append(Values{productID, productName, supplierID, categoryID, quantityPerUnit, unitPrice, unitsInStock, unitsOnOrder, reorderLevel, discontinued}, attrs...)
+	return append(Values{
+		productID,
+		productName,
+		discontinued,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

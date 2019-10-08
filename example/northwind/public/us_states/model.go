@@ -23,7 +23,10 @@ type StateRegion string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.StateID, &r.StateName, &r.StateAbbr, &r.StateRegion,
+		&r.StateID,
+		&r.StateName,
+		&r.StateAbbr,
+		&r.StateRegion,
 	}
 }
 
@@ -38,12 +41,11 @@ type Values []attribute
 
 func InputValues(
 	stateID StateID,
-	stateName StateName,
-	stateAbbr StateAbbr,
-	stateRegion StateRegion,
 	attrs ...attribute,
 ) Values {
-	return append(Values{stateID, stateName, stateAbbr, stateRegion}, attrs...)
+	return append(Values{
+		stateID,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

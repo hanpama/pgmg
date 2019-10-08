@@ -26,7 +26,11 @@ type Discount float32
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.OrderID, &r.ProductID, &r.UnitPrice, &r.Quantity, &r.Discount,
+		&r.OrderID,
+		&r.ProductID,
+		&r.UnitPrice,
+		&r.Quantity,
+		&r.Discount,
 	}
 }
 
@@ -47,7 +51,13 @@ func InputValues(
 	discount Discount,
 	attrs ...attribute,
 ) Values {
-	return append(Values{orderID, productID, unitPrice, quantity, discount}, attrs...)
+	return append(Values{
+		orderID,
+		productID,
+		unitPrice,
+		quantity,
+		discount,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

@@ -19,12 +19,31 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "territories"
-		SELECT * FROM json_populate_recordset(null::"territories", $1) `
+		INSERT INTO "public"."territories" (
+			"territory_id",
+			"territory_description",
+			"region_id"
+		)
+		SELECT
+			"territory_id",
+			"territory_description",
+			"region_id"
+		FROM json_populate_recordset(null::"public"."territories", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "territories"
-		SELECT * FROM json_populate_recordset(null::"territories", $1)
-		RETURNING *`
+		INSERT INTO "public"."territories" (
+			"territory_id",
+			"territory_description",
+			"region_id"
+		)
+		SELECT
+			"territory_id",
+			"territory_description",
+			"region_id"
+		FROM json_populate_recordset(null::"public"."territories", $1)
+		RETURNING
+			"territory_id",
+			"territory_description",
+			"region_id"`
 )
 
 func (k PkTerritories) selectSQL() Query {
@@ -46,18 +65,18 @@ func (k PkTerritories) deleteSQL() Query {
 
 const (
 	SelectPkTerritories = `
-		SELECT * FROM "territories" WHERE ("territories"."territory_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."territories" WHERE ("territory_id") = ($1) LIMIT 1
 		`
 	UpdatePkTerritories = `
-		UPDATE "territories"
-		SET "territory_id" = COALESCE(_ch."territory_id", "territories"."territory_id"),
-			"territory_description" = COALESCE(_ch."territory_description", "territories"."territory_description"),
-			"region_id" = COALESCE(_ch."region_id", "territories"."region_id")
-		FROM (SELECT * FROM json_populate_record(null::"territories", $2)) _ch
-		WHERE ("territories"."territory_id") = ($1)`
+		UPDATE "public"."territories" __ut__
+		SET "territory_id" = COALESCE(__ch__."territory_id", __ut__."territory_id"),
+			"territory_description" = COALESCE(__ch__."territory_description", __ut__."territory_description"),
+			"region_id" = COALESCE(__ch__."region_id", __ut__."region_id")
+		FROM (SELECT * FROM json_populate_record(null::"public"."territories", $2)) __ch__
+		WHERE (__ut__."territory_id") = ($1)`
 	DeletePkTerritories = `
-		DELETE FROM "territories"
-		WHERE ("territories"."territory_id") = ($1)`
+		DELETE FROM "public"."territories"
+		WHERE ("territory_id") = ($1)`
 )
 
 type key interface {

@@ -19,12 +19,66 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "products"
-		SELECT * FROM json_populate_recordset(null::"products", $1) `
+		INSERT INTO "public"."products" (
+			"product_id",
+			"product_name",
+			"supplier_id",
+			"category_id",
+			"quantity_per_unit",
+			"unit_price",
+			"units_in_stock",
+			"units_on_order",
+			"reorder_level",
+			"discontinued"
+		)
+		SELECT
+			"product_id",
+			"product_name",
+			"supplier_id",
+			"category_id",
+			"quantity_per_unit",
+			"unit_price",
+			"units_in_stock",
+			"units_on_order",
+			"reorder_level",
+			"discontinued"
+		FROM json_populate_recordset(null::"public"."products", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "products"
-		SELECT * FROM json_populate_recordset(null::"products", $1)
-		RETURNING *`
+		INSERT INTO "public"."products" (
+			"product_id",
+			"product_name",
+			"supplier_id",
+			"category_id",
+			"quantity_per_unit",
+			"unit_price",
+			"units_in_stock",
+			"units_on_order",
+			"reorder_level",
+			"discontinued"
+		)
+		SELECT
+			"product_id",
+			"product_name",
+			"supplier_id",
+			"category_id",
+			"quantity_per_unit",
+			"unit_price",
+			"units_in_stock",
+			"units_on_order",
+			"reorder_level",
+			"discontinued"
+		FROM json_populate_recordset(null::"public"."products", $1)
+		RETURNING
+			"product_id",
+			"product_name",
+			"supplier_id",
+			"category_id",
+			"quantity_per_unit",
+			"unit_price",
+			"units_in_stock",
+			"units_on_order",
+			"reorder_level",
+			"discontinued"`
 )
 
 func (k PkProducts) selectSQL() Query {
@@ -46,25 +100,25 @@ func (k PkProducts) deleteSQL() Query {
 
 const (
 	SelectPkProducts = `
-		SELECT * FROM "products" WHERE ("products"."product_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."products" WHERE ("product_id") = ($1) LIMIT 1
 		`
 	UpdatePkProducts = `
-		UPDATE "products"
-		SET "product_id" = COALESCE(_ch."product_id", "products"."product_id"),
-			"product_name" = COALESCE(_ch."product_name", "products"."product_name"),
-			"supplier_id" = COALESCE(_ch."supplier_id", "products"."supplier_id"),
-			"category_id" = COALESCE(_ch."category_id", "products"."category_id"),
-			"quantity_per_unit" = COALESCE(_ch."quantity_per_unit", "products"."quantity_per_unit"),
-			"unit_price" = COALESCE(_ch."unit_price", "products"."unit_price"),
-			"units_in_stock" = COALESCE(_ch."units_in_stock", "products"."units_in_stock"),
-			"units_on_order" = COALESCE(_ch."units_on_order", "products"."units_on_order"),
-			"reorder_level" = COALESCE(_ch."reorder_level", "products"."reorder_level"),
-			"discontinued" = COALESCE(_ch."discontinued", "products"."discontinued")
-		FROM (SELECT * FROM json_populate_record(null::"products", $2)) _ch
-		WHERE ("products"."product_id") = ($1)`
+		UPDATE "public"."products" __ut__
+		SET "product_id" = COALESCE(__ch__."product_id", __ut__."product_id"),
+			"product_name" = COALESCE(__ch__."product_name", __ut__."product_name"),
+			"supplier_id" = COALESCE(__ch__."supplier_id", __ut__."supplier_id"),
+			"category_id" = COALESCE(__ch__."category_id", __ut__."category_id"),
+			"quantity_per_unit" = COALESCE(__ch__."quantity_per_unit", __ut__."quantity_per_unit"),
+			"unit_price" = COALESCE(__ch__."unit_price", __ut__."unit_price"),
+			"units_in_stock" = COALESCE(__ch__."units_in_stock", __ut__."units_in_stock"),
+			"units_on_order" = COALESCE(__ch__."units_on_order", __ut__."units_on_order"),
+			"reorder_level" = COALESCE(__ch__."reorder_level", __ut__."reorder_level"),
+			"discontinued" = COALESCE(__ch__."discontinued", __ut__."discontinued")
+		FROM (SELECT * FROM json_populate_record(null::"public"."products", $2)) __ch__
+		WHERE (__ut__."product_id") = ($1)`
 	DeletePkProducts = `
-		DELETE FROM "products"
-		WHERE ("products"."product_id") = ($1)`
+		DELETE FROM "public"."products"
+		WHERE ("product_id") = ($1)`
 )
 
 type key interface {

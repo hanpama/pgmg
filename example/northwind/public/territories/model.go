@@ -21,7 +21,9 @@ type RegionID int16
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.TerritoryID, &r.TerritoryDescription, &r.RegionID,
+		&r.TerritoryID,
+		&r.TerritoryDescription,
+		&r.RegionID,
 	}
 }
 
@@ -40,7 +42,11 @@ func InputValues(
 	regionID RegionID,
 	attrs ...attribute,
 ) Values {
-	return append(Values{territoryID, territoryDescription, regionID}, attrs...)
+	return append(Values{
+		territoryID,
+		territoryDescription,
+		regionID,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

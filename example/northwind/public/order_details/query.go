@@ -19,12 +19,41 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "order_details"
-		SELECT * FROM json_populate_recordset(null::"order_details", $1) `
+		INSERT INTO "public"."order_details" (
+			"order_id",
+			"product_id",
+			"unit_price",
+			"quantity",
+			"discount"
+		)
+		SELECT
+			"order_id",
+			"product_id",
+			"unit_price",
+			"quantity",
+			"discount"
+		FROM json_populate_recordset(null::"public"."order_details", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "order_details"
-		SELECT * FROM json_populate_recordset(null::"order_details", $1)
-		RETURNING *`
+		INSERT INTO "public"."order_details" (
+			"order_id",
+			"product_id",
+			"unit_price",
+			"quantity",
+			"discount"
+		)
+		SELECT
+			"order_id",
+			"product_id",
+			"unit_price",
+			"quantity",
+			"discount"
+		FROM json_populate_recordset(null::"public"."order_details", $1)
+		RETURNING
+			"order_id",
+			"product_id",
+			"unit_price",
+			"quantity",
+			"discount"`
 )
 
 func (k PkOrderDetails) selectSQL() Query {
@@ -49,20 +78,20 @@ func (k PkOrderDetails) deleteSQL() Query {
 
 const (
 	SelectPkOrderDetails = `
-		SELECT * FROM "order_details" WHERE ("order_details"."order_id", "order_details"."product_id") = ($1, $2) LIMIT 1
+		SELECT * FROM "public"."order_details" WHERE ("order_id", "product_id") = ($1, $2) LIMIT 1
 		`
 	UpdatePkOrderDetails = `
-		UPDATE "order_details"
-		SET "order_id" = COALESCE(_ch."order_id", "order_details"."order_id"),
-			"product_id" = COALESCE(_ch."product_id", "order_details"."product_id"),
-			"unit_price" = COALESCE(_ch."unit_price", "order_details"."unit_price"),
-			"quantity" = COALESCE(_ch."quantity", "order_details"."quantity"),
-			"discount" = COALESCE(_ch."discount", "order_details"."discount")
-		FROM (SELECT * FROM json_populate_record(null::"order_details", $2)) _ch
-		WHERE ("order_details"."order_id", "order_details"."product_id") = ($1, $2)`
+		UPDATE "public"."order_details" __ut__
+		SET "order_id" = COALESCE(__ch__."order_id", __ut__."order_id"),
+			"product_id" = COALESCE(__ch__."product_id", __ut__."product_id"),
+			"unit_price" = COALESCE(__ch__."unit_price", __ut__."unit_price"),
+			"quantity" = COALESCE(__ch__."quantity", __ut__."quantity"),
+			"discount" = COALESCE(__ch__."discount", __ut__."discount")
+		FROM (SELECT * FROM json_populate_record(null::"public"."order_details", $2)) __ch__
+		WHERE (__ut__."order_id", __ut__."product_id") = ($1, $2)`
 	DeletePkOrderDetails = `
-		DELETE FROM "order_details"
-		WHERE ("order_details"."order_id", "order_details"."product_id") = ($1, $2)`
+		DELETE FROM "public"."order_details"
+		WHERE ("order_id", "product_id") = ($1, $2)`
 )
 
 type key interface {

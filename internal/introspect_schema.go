@@ -12,6 +12,7 @@ type Schema struct {
 
 type Table struct {
 	Name    string   `json:"name"`
+	Schema  string   `json:"schema"`
 	Columns []Column `json:"columns"`
 	Keys    []Key    `json:"keys"`
 	// IsInsertableInto bool      `json:"is_insertable_into"`

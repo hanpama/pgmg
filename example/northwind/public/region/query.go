@@ -19,12 +19,26 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "region"
-		SELECT * FROM json_populate_recordset(null::"region", $1) `
+		INSERT INTO "public"."region" (
+			"region_id",
+			"region_description"
+		)
+		SELECT
+			"region_id",
+			"region_description"
+		FROM json_populate_recordset(null::"public"."region", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "region"
-		SELECT * FROM json_populate_recordset(null::"region", $1)
-		RETURNING *`
+		INSERT INTO "public"."region" (
+			"region_id",
+			"region_description"
+		)
+		SELECT
+			"region_id",
+			"region_description"
+		FROM json_populate_recordset(null::"public"."region", $1)
+		RETURNING
+			"region_id",
+			"region_description"`
 )
 
 func (k PkRegion) selectSQL() Query {
@@ -46,17 +60,17 @@ func (k PkRegion) deleteSQL() Query {
 
 const (
 	SelectPkRegion = `
-		SELECT * FROM "region" WHERE ("region"."region_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."region" WHERE ("region_id") = ($1) LIMIT 1
 		`
 	UpdatePkRegion = `
-		UPDATE "region"
-		SET "region_id" = COALESCE(_ch."region_id", "region"."region_id"),
-			"region_description" = COALESCE(_ch."region_description", "region"."region_description")
-		FROM (SELECT * FROM json_populate_record(null::"region", $2)) _ch
-		WHERE ("region"."region_id") = ($1)`
+		UPDATE "public"."region" __ut__
+		SET "region_id" = COALESCE(__ch__."region_id", __ut__."region_id"),
+			"region_description" = COALESCE(__ch__."region_description", __ut__."region_description")
+		FROM (SELECT * FROM json_populate_record(null::"public"."region", $2)) __ch__
+		WHERE (__ut__."region_id") = ($1)`
 	DeletePkRegion = `
-		DELETE FROM "region"
-		WHERE ("region"."region_id") = ($1)`
+		DELETE FROM "public"."region"
+		WHERE ("region_id") = ($1)`
 )
 
 type key interface {

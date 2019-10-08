@@ -52,8 +52,24 @@ type PhotoPath string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.EmployeeID, &r.LastName, &r.FirstName, &r.Title, &r.TitleOfCourtesy, &r.BirthDate,
-		&r.HireDate, &r.Address, &r.City, &r.Region, &r.PostalCode, &r.Country, &r.HomePhone, &r.Extension, &r.Photo, &r.Notes, &r.ReportsTo, &r.PhotoPath,
+		&r.EmployeeID,
+		&r.LastName,
+		&r.FirstName,
+		&r.Title,
+		&r.TitleOfCourtesy,
+		&r.BirthDate,
+		&r.HireDate,
+		&r.Address,
+		&r.City,
+		&r.Region,
+		&r.PostalCode,
+		&r.Country,
+		&r.HomePhone,
+		&r.Extension,
+		&r.Photo,
+		&r.Notes,
+		&r.ReportsTo,
+		&r.PhotoPath,
 	}
 }
 
@@ -70,24 +86,13 @@ func InputValues(
 	employeeID EmployeeID,
 	lastName LastName,
 	firstName FirstName,
-	title Title,
-	titleOfCourtesy TitleOfCourtesy,
-	birthDate BirthDate,
-	hireDate HireDate,
-	address Address,
-	city City,
-	region Region,
-	postalCode PostalCode,
-	country Country,
-	homePhone HomePhone,
-	extension Extension,
-	photo Photo,
-	notes Notes,
-	reportsTo ReportsTo,
-	photoPath PhotoPath,
 	attrs ...attribute,
 ) Values {
-	return append(Values{employeeID, lastName, firstName, title, titleOfCourtesy, birthDate, hireDate, address, city, region, postalCode, country, homePhone, extension, photo, notes, reportsTo, photoPath}, attrs...)
+	return append(Values{
+		employeeID,
+		lastName,
+		firstName,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

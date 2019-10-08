@@ -19,12 +19,31 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "shippers"
-		SELECT * FROM json_populate_recordset(null::"shippers", $1) `
+		INSERT INTO "public"."shippers" (
+			"shipper_id",
+			"company_name",
+			"phone"
+		)
+		SELECT
+			"shipper_id",
+			"company_name",
+			"phone"
+		FROM json_populate_recordset(null::"public"."shippers", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "shippers"
-		SELECT * FROM json_populate_recordset(null::"shippers", $1)
-		RETURNING *`
+		INSERT INTO "public"."shippers" (
+			"shipper_id",
+			"company_name",
+			"phone"
+		)
+		SELECT
+			"shipper_id",
+			"company_name",
+			"phone"
+		FROM json_populate_recordset(null::"public"."shippers", $1)
+		RETURNING
+			"shipper_id",
+			"company_name",
+			"phone"`
 )
 
 func (k PkShippers) selectSQL() Query {
@@ -46,18 +65,18 @@ func (k PkShippers) deleteSQL() Query {
 
 const (
 	SelectPkShippers = `
-		SELECT * FROM "shippers" WHERE ("shippers"."shipper_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."shippers" WHERE ("shipper_id") = ($1) LIMIT 1
 		`
 	UpdatePkShippers = `
-		UPDATE "shippers"
-		SET "shipper_id" = COALESCE(_ch."shipper_id", "shippers"."shipper_id"),
-			"company_name" = COALESCE(_ch."company_name", "shippers"."company_name"),
-			"phone" = COALESCE(_ch."phone", "shippers"."phone")
-		FROM (SELECT * FROM json_populate_record(null::"shippers", $2)) _ch
-		WHERE ("shippers"."shipper_id") = ($1)`
+		UPDATE "public"."shippers" __ut__
+		SET "shipper_id" = COALESCE(__ch__."shipper_id", __ut__."shipper_id"),
+			"company_name" = COALESCE(__ch__."company_name", __ut__."company_name"),
+			"phone" = COALESCE(__ch__."phone", __ut__."phone")
+		FROM (SELECT * FROM json_populate_record(null::"public"."shippers", $2)) __ch__
+		WHERE (__ut__."shipper_id") = ($1)`
 	DeletePkShippers = `
-		DELETE FROM "shippers"
-		WHERE ("shippers"."shipper_id") = ($1)`
+		DELETE FROM "public"."shippers"
+		WHERE ("shipper_id") = ($1)`
 )
 
 type key interface {

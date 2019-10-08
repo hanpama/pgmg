@@ -19,12 +19,86 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "orders"
-		SELECT * FROM json_populate_recordset(null::"orders", $1) `
+		INSERT INTO "public"."orders" (
+			"order_id",
+			"customer_id",
+			"employee_id",
+			"order_date",
+			"required_date",
+			"shipped_date",
+			"ship_via",
+			"freight",
+			"ship_name",
+			"ship_address",
+			"ship_city",
+			"ship_region",
+			"ship_postal_code",
+			"ship_country"
+		)
+		SELECT
+			"order_id",
+			"customer_id",
+			"employee_id",
+			"order_date",
+			"required_date",
+			"shipped_date",
+			"ship_via",
+			"freight",
+			"ship_name",
+			"ship_address",
+			"ship_city",
+			"ship_region",
+			"ship_postal_code",
+			"ship_country"
+		FROM json_populate_recordset(null::"public"."orders", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "orders"
-		SELECT * FROM json_populate_recordset(null::"orders", $1)
-		RETURNING *`
+		INSERT INTO "public"."orders" (
+			"order_id",
+			"customer_id",
+			"employee_id",
+			"order_date",
+			"required_date",
+			"shipped_date",
+			"ship_via",
+			"freight",
+			"ship_name",
+			"ship_address",
+			"ship_city",
+			"ship_region",
+			"ship_postal_code",
+			"ship_country"
+		)
+		SELECT
+			"order_id",
+			"customer_id",
+			"employee_id",
+			"order_date",
+			"required_date",
+			"shipped_date",
+			"ship_via",
+			"freight",
+			"ship_name",
+			"ship_address",
+			"ship_city",
+			"ship_region",
+			"ship_postal_code",
+			"ship_country"
+		FROM json_populate_recordset(null::"public"."orders", $1)
+		RETURNING
+			"order_id",
+			"customer_id",
+			"employee_id",
+			"order_date",
+			"required_date",
+			"shipped_date",
+			"ship_via",
+			"freight",
+			"ship_name",
+			"ship_address",
+			"ship_city",
+			"ship_region",
+			"ship_postal_code",
+			"ship_country"`
 )
 
 func (k PkOrders) selectSQL() Query {
@@ -46,29 +120,29 @@ func (k PkOrders) deleteSQL() Query {
 
 const (
 	SelectPkOrders = `
-		SELECT * FROM "orders" WHERE ("orders"."order_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."orders" WHERE ("order_id") = ($1) LIMIT 1
 		`
 	UpdatePkOrders = `
-		UPDATE "orders"
-		SET "order_id" = COALESCE(_ch."order_id", "orders"."order_id"),
-			"customer_id" = COALESCE(_ch."customer_id", "orders"."customer_id"),
-			"employee_id" = COALESCE(_ch."employee_id", "orders"."employee_id"),
-			"order_date" = COALESCE(_ch."order_date", "orders"."order_date"),
-			"required_date" = COALESCE(_ch."required_date", "orders"."required_date"),
-			"shipped_date" = COALESCE(_ch."shipped_date", "orders"."shipped_date"),
-			"ship_via" = COALESCE(_ch."ship_via", "orders"."ship_via"),
-			"freight" = COALESCE(_ch."freight", "orders"."freight"),
-			"ship_name" = COALESCE(_ch."ship_name", "orders"."ship_name"),
-			"ship_address" = COALESCE(_ch."ship_address", "orders"."ship_address"),
-			"ship_city" = COALESCE(_ch."ship_city", "orders"."ship_city"),
-			"ship_region" = COALESCE(_ch."ship_region", "orders"."ship_region"),
-			"ship_postal_code" = COALESCE(_ch."ship_postal_code", "orders"."ship_postal_code"),
-			"ship_country" = COALESCE(_ch."ship_country", "orders"."ship_country")
-		FROM (SELECT * FROM json_populate_record(null::"orders", $2)) _ch
-		WHERE ("orders"."order_id") = ($1)`
+		UPDATE "public"."orders" __ut__
+		SET "order_id" = COALESCE(__ch__."order_id", __ut__."order_id"),
+			"customer_id" = COALESCE(__ch__."customer_id", __ut__."customer_id"),
+			"employee_id" = COALESCE(__ch__."employee_id", __ut__."employee_id"),
+			"order_date" = COALESCE(__ch__."order_date", __ut__."order_date"),
+			"required_date" = COALESCE(__ch__."required_date", __ut__."required_date"),
+			"shipped_date" = COALESCE(__ch__."shipped_date", __ut__."shipped_date"),
+			"ship_via" = COALESCE(__ch__."ship_via", __ut__."ship_via"),
+			"freight" = COALESCE(__ch__."freight", __ut__."freight"),
+			"ship_name" = COALESCE(__ch__."ship_name", __ut__."ship_name"),
+			"ship_address" = COALESCE(__ch__."ship_address", __ut__."ship_address"),
+			"ship_city" = COALESCE(__ch__."ship_city", __ut__."ship_city"),
+			"ship_region" = COALESCE(__ch__."ship_region", __ut__."ship_region"),
+			"ship_postal_code" = COALESCE(__ch__."ship_postal_code", __ut__."ship_postal_code"),
+			"ship_country" = COALESCE(__ch__."ship_country", __ut__."ship_country")
+		FROM (SELECT * FROM json_populate_record(null::"public"."orders", $2)) __ch__
+		WHERE (__ut__."order_id") = ($1)`
 	DeletePkOrders = `
-		DELETE FROM "orders"
-		WHERE ("orders"."order_id") = ($1)`
+		DELETE FROM "public"."orders"
+		WHERE ("order_id") = ($1)`
 )
 
 type key interface {

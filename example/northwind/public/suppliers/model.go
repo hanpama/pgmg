@@ -39,8 +39,18 @@ type Homepage string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.SupplierID, &r.CompanyName, &r.ContactName, &r.ContactTitle, &r.Address, &r.City,
-		&r.Region, &r.PostalCode, &r.Country, &r.Phone, &r.Fax, &r.Homepage,
+		&r.SupplierID,
+		&r.CompanyName,
+		&r.ContactName,
+		&r.ContactTitle,
+		&r.Address,
+		&r.City,
+		&r.Region,
+		&r.PostalCode,
+		&r.Country,
+		&r.Phone,
+		&r.Fax,
+		&r.Homepage,
 	}
 }
 
@@ -56,19 +66,12 @@ type Values []attribute
 func InputValues(
 	supplierID SupplierID,
 	companyName CompanyName,
-	contactName ContactName,
-	contactTitle ContactTitle,
-	address Address,
-	city City,
-	region Region,
-	postalCode PostalCode,
-	country Country,
-	phone Phone,
-	fax Fax,
-	homepage Homepage,
 	attrs ...attribute,
 ) Values {
-	return append(Values{supplierID, companyName, contactName, contactTitle, address, city, region, postalCode, country, phone, fax, homepage}, attrs...)
+	return append(Values{
+		supplierID,
+		companyName,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

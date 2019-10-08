@@ -23,7 +23,10 @@ type Picture []byte
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.CategoryID, &r.CategoryName, &r.Description, &r.Picture,
+		&r.CategoryID,
+		&r.CategoryName,
+		&r.Description,
+		&r.Picture,
 	}
 }
 
@@ -39,11 +42,12 @@ type Values []attribute
 func InputValues(
 	categoryID CategoryID,
 	categoryName CategoryName,
-	description Description,
-	picture Picture,
 	attrs ...attribute,
 ) Values {
-	return append(Values{categoryID, categoryName, description, picture}, attrs...)
+	return append(Values{
+		categoryID,
+		categoryName,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

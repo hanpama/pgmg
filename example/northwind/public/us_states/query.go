@@ -19,12 +19,36 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "us_states"
-		SELECT * FROM json_populate_recordset(null::"us_states", $1) `
+		INSERT INTO "public"."us_states" (
+			"state_id",
+			"state_name",
+			"state_abbr",
+			"state_region"
+		)
+		SELECT
+			"state_id",
+			"state_name",
+			"state_abbr",
+			"state_region"
+		FROM json_populate_recordset(null::"public"."us_states", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "us_states"
-		SELECT * FROM json_populate_recordset(null::"us_states", $1)
-		RETURNING *`
+		INSERT INTO "public"."us_states" (
+			"state_id",
+			"state_name",
+			"state_abbr",
+			"state_region"
+		)
+		SELECT
+			"state_id",
+			"state_name",
+			"state_abbr",
+			"state_region"
+		FROM json_populate_recordset(null::"public"."us_states", $1)
+		RETURNING
+			"state_id",
+			"state_name",
+			"state_abbr",
+			"state_region"`
 )
 
 func (k PkUsstates) selectSQL() Query {
@@ -46,19 +70,19 @@ func (k PkUsstates) deleteSQL() Query {
 
 const (
 	SelectPkUsstates = `
-		SELECT * FROM "us_states" WHERE ("us_states"."state_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."us_states" WHERE ("state_id") = ($1) LIMIT 1
 		`
 	UpdatePkUsstates = `
-		UPDATE "us_states"
-		SET "state_id" = COALESCE(_ch."state_id", "us_states"."state_id"),
-			"state_name" = COALESCE(_ch."state_name", "us_states"."state_name"),
-			"state_abbr" = COALESCE(_ch."state_abbr", "us_states"."state_abbr"),
-			"state_region" = COALESCE(_ch."state_region", "us_states"."state_region")
-		FROM (SELECT * FROM json_populate_record(null::"us_states", $2)) _ch
-		WHERE ("us_states"."state_id") = ($1)`
+		UPDATE "public"."us_states" __ut__
+		SET "state_id" = COALESCE(__ch__."state_id", __ut__."state_id"),
+			"state_name" = COALESCE(__ch__."state_name", __ut__."state_name"),
+			"state_abbr" = COALESCE(__ch__."state_abbr", __ut__."state_abbr"),
+			"state_region" = COALESCE(__ch__."state_region", __ut__."state_region")
+		FROM (SELECT * FROM json_populate_record(null::"public"."us_states", $2)) __ch__
+		WHERE (__ut__."state_id") = ($1)`
 	DeletePkUsstates = `
-		DELETE FROM "us_states"
-		WHERE ("us_states"."state_id") = ($1)`
+		DELETE FROM "public"."us_states"
+		WHERE ("state_id") = ($1)`
 )
 
 type key interface {

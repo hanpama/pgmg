@@ -40,7 +40,8 @@ func (m *model) Dependencies() (mods []string) {
 	return mods
 }
 
-func (m *model) Name() string { return m.t.Name }
+func (m *model) Name() string   { return m.t.Name }
+func (m *model) Schema() string { return m.t.Schema }
 
 func (m *model) Properties() (props []property) {
 	for i := range m.t.Columns {
@@ -77,8 +78,10 @@ func (p *property) SelectType() string {
 	}
 	return p.t.Name
 }
+func (p *property) InsertRequired() bool { return !p.c.IsNullable && p.c.Default == "" }
 func (p *property) SelectNullable() bool { return p.c.IsNullable }
 func (p *property) NullableType() string { return p.t.NullableName }
+func (p *property) Default() string      { return p.c.Default }
 
 type key struct{ k *Key }
 

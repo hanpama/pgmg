@@ -19,12 +19,36 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "categories"
-		SELECT * FROM json_populate_recordset(null::"categories", $1) `
+		INSERT INTO "public"."categories" (
+			"category_id",
+			"category_name",
+			"description",
+			"picture"
+		)
+		SELECT
+			"category_id",
+			"category_name",
+			"description",
+			"picture"
+		FROM json_populate_recordset(null::"public"."categories", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "categories"
-		SELECT * FROM json_populate_recordset(null::"categories", $1)
-		RETURNING *`
+		INSERT INTO "public"."categories" (
+			"category_id",
+			"category_name",
+			"description",
+			"picture"
+		)
+		SELECT
+			"category_id",
+			"category_name",
+			"description",
+			"picture"
+		FROM json_populate_recordset(null::"public"."categories", $1)
+		RETURNING
+			"category_id",
+			"category_name",
+			"description",
+			"picture"`
 )
 
 func (k PkCategories) selectSQL() Query {
@@ -46,19 +70,19 @@ func (k PkCategories) deleteSQL() Query {
 
 const (
 	SelectPkCategories = `
-		SELECT * FROM "categories" WHERE ("categories"."category_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."categories" WHERE ("category_id") = ($1) LIMIT 1
 		`
 	UpdatePkCategories = `
-		UPDATE "categories"
-		SET "category_id" = COALESCE(_ch."category_id", "categories"."category_id"),
-			"category_name" = COALESCE(_ch."category_name", "categories"."category_name"),
-			"description" = COALESCE(_ch."description", "categories"."description"),
-			"picture" = COALESCE(_ch."picture", "categories"."picture")
-		FROM (SELECT * FROM json_populate_record(null::"categories", $2)) _ch
-		WHERE ("categories"."category_id") = ($1)`
+		UPDATE "public"."categories" __ut__
+		SET "category_id" = COALESCE(__ch__."category_id", __ut__."category_id"),
+			"category_name" = COALESCE(__ch__."category_name", __ut__."category_name"),
+			"description" = COALESCE(__ch__."description", __ut__."description"),
+			"picture" = COALESCE(__ch__."picture", __ut__."picture")
+		FROM (SELECT * FROM json_populate_record(null::"public"."categories", $2)) __ch__
+		WHERE (__ut__."category_id") = ($1)`
 	DeletePkCategories = `
-		DELETE FROM "categories"
-		WHERE ("categories"."category_id") = ($1)`
+		DELETE FROM "public"."categories"
+		WHERE ("category_id") = ($1)`
 )
 
 type key interface {

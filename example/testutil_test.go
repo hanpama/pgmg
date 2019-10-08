@@ -1,4 +1,4 @@
-package northwind_test
+package example_test
 
 import (
 	"database/sql"

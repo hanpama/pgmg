@@ -19,12 +19,106 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "employees"
-		SELECT * FROM json_populate_recordset(null::"employees", $1) `
+		INSERT INTO "public"."employees" (
+			"employee_id",
+			"last_name",
+			"first_name",
+			"title",
+			"title_of_courtesy",
+			"birth_date",
+			"hire_date",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"home_phone",
+			"extension",
+			"photo",
+			"notes",
+			"reports_to",
+			"photo_path"
+		)
+		SELECT
+			"employee_id",
+			"last_name",
+			"first_name",
+			"title",
+			"title_of_courtesy",
+			"birth_date",
+			"hire_date",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"home_phone",
+			"extension",
+			"photo",
+			"notes",
+			"reports_to",
+			"photo_path"
+		FROM json_populate_recordset(null::"public"."employees", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "employees"
-		SELECT * FROM json_populate_recordset(null::"employees", $1)
-		RETURNING *`
+		INSERT INTO "public"."employees" (
+			"employee_id",
+			"last_name",
+			"first_name",
+			"title",
+			"title_of_courtesy",
+			"birth_date",
+			"hire_date",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"home_phone",
+			"extension",
+			"photo",
+			"notes",
+			"reports_to",
+			"photo_path"
+		)
+		SELECT
+			"employee_id",
+			"last_name",
+			"first_name",
+			"title",
+			"title_of_courtesy",
+			"birth_date",
+			"hire_date",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"home_phone",
+			"extension",
+			"photo",
+			"notes",
+			"reports_to",
+			"photo_path"
+		FROM json_populate_recordset(null::"public"."employees", $1)
+		RETURNING
+			"employee_id",
+			"last_name",
+			"first_name",
+			"title",
+			"title_of_courtesy",
+			"birth_date",
+			"hire_date",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"home_phone",
+			"extension",
+			"photo",
+			"notes",
+			"reports_to",
+			"photo_path"`
 )
 
 func (k PkEmployees) selectSQL() Query {
@@ -46,33 +140,33 @@ func (k PkEmployees) deleteSQL() Query {
 
 const (
 	SelectPkEmployees = `
-		SELECT * FROM "employees" WHERE ("employees"."employee_id") = ($1) LIMIT 1
+		SELECT * FROM "public"."employees" WHERE ("employee_id") = ($1) LIMIT 1
 		`
 	UpdatePkEmployees = `
-		UPDATE "employees"
-		SET "employee_id" = COALESCE(_ch."employee_id", "employees"."employee_id"),
-			"last_name" = COALESCE(_ch."last_name", "employees"."last_name"),
-			"first_name" = COALESCE(_ch."first_name", "employees"."first_name"),
-			"title" = COALESCE(_ch."title", "employees"."title"),
-			"title_of_courtesy" = COALESCE(_ch."title_of_courtesy", "employees"."title_of_courtesy"),
-			"birth_date" = COALESCE(_ch."birth_date", "employees"."birth_date"),
-			"hire_date" = COALESCE(_ch."hire_date", "employees"."hire_date"),
-			"address" = COALESCE(_ch."address", "employees"."address"),
-			"city" = COALESCE(_ch."city", "employees"."city"),
-			"region" = COALESCE(_ch."region", "employees"."region"),
-			"postal_code" = COALESCE(_ch."postal_code", "employees"."postal_code"),
-			"country" = COALESCE(_ch."country", "employees"."country"),
-			"home_phone" = COALESCE(_ch."home_phone", "employees"."home_phone"),
-			"extension" = COALESCE(_ch."extension", "employees"."extension"),
-			"photo" = COALESCE(_ch."photo", "employees"."photo"),
-			"notes" = COALESCE(_ch."notes", "employees"."notes"),
-			"reports_to" = COALESCE(_ch."reports_to", "employees"."reports_to"),
-			"photo_path" = COALESCE(_ch."photo_path", "employees"."photo_path")
-		FROM (SELECT * FROM json_populate_record(null::"employees", $2)) _ch
-		WHERE ("employees"."employee_id") = ($1)`
+		UPDATE "public"."employees" __ut__
+		SET "employee_id" = COALESCE(__ch__."employee_id", __ut__."employee_id"),
+			"last_name" = COALESCE(__ch__."last_name", __ut__."last_name"),
+			"first_name" = COALESCE(__ch__."first_name", __ut__."first_name"),
+			"title" = COALESCE(__ch__."title", __ut__."title"),
+			"title_of_courtesy" = COALESCE(__ch__."title_of_courtesy", __ut__."title_of_courtesy"),
+			"birth_date" = COALESCE(__ch__."birth_date", __ut__."birth_date"),
+			"hire_date" = COALESCE(__ch__."hire_date", __ut__."hire_date"),
+			"address" = COALESCE(__ch__."address", __ut__."address"),
+			"city" = COALESCE(__ch__."city", __ut__."city"),
+			"region" = COALESCE(__ch__."region", __ut__."region"),
+			"postal_code" = COALESCE(__ch__."postal_code", __ut__."postal_code"),
+			"country" = COALESCE(__ch__."country", __ut__."country"),
+			"home_phone" = COALESCE(__ch__."home_phone", __ut__."home_phone"),
+			"extension" = COALESCE(__ch__."extension", __ut__."extension"),
+			"photo" = COALESCE(__ch__."photo", __ut__."photo"),
+			"notes" = COALESCE(__ch__."notes", __ut__."notes"),
+			"reports_to" = COALESCE(__ch__."reports_to", __ut__."reports_to"),
+			"photo_path" = COALESCE(__ch__."photo_path", __ut__."photo_path")
+		FROM (SELECT * FROM json_populate_record(null::"public"."employees", $2)) __ch__
+		WHERE (__ut__."employee_id") = ($1)`
 	DeletePkEmployees = `
-		DELETE FROM "employees"
-		WHERE ("employees"."employee_id") = ($1)`
+		DELETE FROM "public"."employees"
+		WHERE ("employee_id") = ($1)`
 )
 
 type key interface {

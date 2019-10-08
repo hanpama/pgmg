@@ -19,12 +19,26 @@ func Delete(k key) Query {
 
 const (
 	InsertSQL = `
-		INSERT INTO "customer_customer_demo"
-		SELECT * FROM json_populate_recordset(null::"customer_customer_demo", $1) `
+		INSERT INTO "public"."customer_customer_demo" (
+			"customer_id",
+			"customer_type_id"
+		)
+		SELECT
+			"customer_id",
+			"customer_type_id"
+		FROM json_populate_recordset(null::"public"."customer_customer_demo", $1)`
 	InsertReturningSQL = `
-		INSERT INTO "customer_customer_demo"
-		SELECT * FROM json_populate_recordset(null::"customer_customer_demo", $1)
-		RETURNING *`
+		INSERT INTO "public"."customer_customer_demo" (
+			"customer_id",
+			"customer_type_id"
+		)
+		SELECT
+			"customer_id",
+			"customer_type_id"
+		FROM json_populate_recordset(null::"public"."customer_customer_demo", $1)
+		RETURNING
+			"customer_id",
+			"customer_type_id"`
 )
 
 func (k PkCustomerCustomerDemo) selectSQL() Query {
@@ -49,17 +63,17 @@ func (k PkCustomerCustomerDemo) deleteSQL() Query {
 
 const (
 	SelectPkCustomerCustomerDemo = `
-		SELECT * FROM "customer_customer_demo" WHERE ("customer_customer_demo"."customer_id", "customer_customer_demo"."customer_type_id") = ($1, $2) LIMIT 1
+		SELECT * FROM "public"."customer_customer_demo" WHERE ("customer_id", "customer_type_id") = ($1, $2) LIMIT 1
 		`
 	UpdatePkCustomerCustomerDemo = `
-		UPDATE "customer_customer_demo"
-		SET "customer_id" = COALESCE(_ch."customer_id", "customer_customer_demo"."customer_id"),
-			"customer_type_id" = COALESCE(_ch."customer_type_id", "customer_customer_demo"."customer_type_id")
-		FROM (SELECT * FROM json_populate_record(null::"customer_customer_demo", $2)) _ch
-		WHERE ("customer_customer_demo"."customer_id", "customer_customer_demo"."customer_type_id") = ($1, $2)`
+		UPDATE "public"."customer_customer_demo" __ut__
+		SET "customer_id" = COALESCE(__ch__."customer_id", __ut__."customer_id"),
+			"customer_type_id" = COALESCE(__ch__."customer_type_id", __ut__."customer_type_id")
+		FROM (SELECT * FROM json_populate_record(null::"public"."customer_customer_demo", $2)) __ch__
+		WHERE (__ut__."customer_id", __ut__."customer_type_id") = ($1, $2)`
 	DeletePkCustomerCustomerDemo = `
-		DELETE FROM "customer_customer_demo"
-		WHERE ("customer_customer_demo"."customer_id", "customer_customer_demo"."customer_type_id") = ($1, $2)`
+		DELETE FROM "public"."customer_customer_demo"
+		WHERE ("customer_id", "customer_type_id") = ($1, $2)`
 )
 
 type key interface {

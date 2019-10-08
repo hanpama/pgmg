@@ -44,8 +44,20 @@ type ShipCountry string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.OrderID, &r.CustomerID, &r.EmployeeID, &r.OrderDate, &r.RequiredDate, &r.ShippedDate,
-		&r.ShipVia, &r.Freight, &r.ShipName, &r.ShipAddress, &r.ShipCity, &r.ShipRegion, &r.ShipPostalCode, &r.ShipCountry,
+		&r.OrderID,
+		&r.CustomerID,
+		&r.EmployeeID,
+		&r.OrderDate,
+		&r.RequiredDate,
+		&r.ShippedDate,
+		&r.ShipVia,
+		&r.Freight,
+		&r.ShipName,
+		&r.ShipAddress,
+		&r.ShipCity,
+		&r.ShipRegion,
+		&r.ShipPostalCode,
+		&r.ShipCountry,
 	}
 }
 
@@ -60,22 +72,11 @@ type Values []attribute
 
 func InputValues(
 	orderID OrderID,
-	customerID CustomerID,
-	employeeID EmployeeID,
-	orderDate OrderDate,
-	requiredDate RequiredDate,
-	shippedDate ShippedDate,
-	shipVia ShipVia,
-	freight Freight,
-	shipName ShipName,
-	shipAddress ShipAddress,
-	shipCity ShipCity,
-	shipRegion ShipRegion,
-	shipPostalCode ShipPostalCode,
-	shipCountry ShipCountry,
 	attrs ...attribute,
 ) Values {
-	return append(Values{orderID, customerID, employeeID, orderDate, requiredDate, shippedDate, shipVia, freight, shipName, shipAddress, shipCity, shipRegion, shipPostalCode, shipCountry}, attrs...)
+	return append(Values{
+		orderID,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

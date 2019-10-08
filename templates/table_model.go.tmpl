@@ -46,15 +46,15 @@ func (rs *Recordset) ReceiveNext() []interface{} {
 type Values []attribute
 
 func InputValues(
-	{{ range $i, $p := .Properties -}}
+	{{ range $i, $p := .Properties }}{{ if $p.InsertRequired -}}
 	{{ $p.LowerName }} {{ $p.CapitalName }},
-	{{ end -}}
+	{{ end }}{{ end -}}
 	attrs ...attribute,
 ) Values {
 	return append(Values{
-		{{- range $i, $p := .Properties -}}
+		{{ range $i, $p := .Properties }}{{ if $p.InsertRequired -}}
 		{{ $p.LowerName }},
-		{{- end -}}
+		{{ end }}{{- end -}}
 	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {

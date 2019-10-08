@@ -19,7 +19,8 @@ type RegionDescription string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.RegionID, &r.RegionDescription,
+		&r.RegionID,
+		&r.RegionDescription,
 	}
 }
 
@@ -37,7 +38,10 @@ func InputValues(
 	regionDescription RegionDescription,
 	attrs ...attribute,
 ) Values {
-	return append(Values{regionID, regionDescription}, attrs...)
+	return append(Values{
+		regionID,
+		regionDescription,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {

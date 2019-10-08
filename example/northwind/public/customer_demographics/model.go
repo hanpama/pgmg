@@ -19,7 +19,8 @@ type CustomerDesc string
 
 func (r *Record) Receive() []interface{} {
 	return []interface{}{
-		&r.CustomerTypeID, &r.CustomerDesc,
+		&r.CustomerTypeID,
+		&r.CustomerDesc,
 	}
 }
 
@@ -34,10 +35,11 @@ type Values []attribute
 
 func InputValues(
 	customerTypeID CustomerTypeID,
-	customerDesc CustomerDesc,
 	attrs ...attribute,
 ) Values {
-	return append(Values{customerTypeID, customerDesc}, attrs...)
+	return append(Values{
+		customerTypeID,
+	}, attrs...)
 }
 func (vs Values) ApplyTo(r *Record) {
 	for _, v := range vs {
