@@ -110,8 +110,20 @@ func (k PkSuppliers) deleteSQL() Query {
 
 const (
 	SelectPkSuppliers = `
-		SELECT * FROM "public"."suppliers" WHERE ("supplier_id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"supplier_id",
+			"company_name",
+			"contact_name",
+			"contact_title",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"phone",
+			"fax",
+			"homepage"
+		FROM "public"."suppliers" WHERE ("supplier_id") = ($1) LIMIT 1`
 	UpdatePkSuppliers = `
 		UPDATE "public"."suppliers" __ut__
 		SET "supplier_id" = COALESCE(__ch__."supplier_id", __ut__."supplier_id"),

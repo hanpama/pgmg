@@ -60,8 +60,10 @@ func (k PkRegion) deleteSQL() Query {
 
 const (
 	SelectPkRegion = `
-		SELECT * FROM "public"."region" WHERE ("region_id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"region_id",
+			"region_description"
+		FROM "public"."region" WHERE ("region_id") = ($1) LIMIT 1`
 	UpdatePkRegion = `
 		UPDATE "public"."region" __ut__
 		SET "region_id" = COALESCE(__ch__."region_id", __ut__."region_id"),

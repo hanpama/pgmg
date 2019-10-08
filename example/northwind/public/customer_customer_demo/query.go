@@ -63,8 +63,10 @@ func (k PkCustomerCustomerDemo) deleteSQL() Query {
 
 const (
 	SelectPkCustomerCustomerDemo = `
-		SELECT * FROM "public"."customer_customer_demo" WHERE ("customer_id", "customer_type_id") = ($1, $2) LIMIT 1
-		`
+		SELECT 
+			"customer_id",
+			"customer_type_id"
+		FROM "public"."customer_customer_demo" WHERE ("customer_id", "customer_type_id") = ($1, $2) LIMIT 1`
 	UpdatePkCustomerCustomerDemo = `
 		UPDATE "public"."customer_customer_demo" __ut__
 		SET "customer_id" = COALESCE(__ch__."customer_id", __ut__."customer_id"),

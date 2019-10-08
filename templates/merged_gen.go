@@ -232,7 +232,10 @@ import "encoding/base64"
 // 
 // const (
 // 	Select{{$key.CapitalName}} = `
-// 		SELECT * FROM "{{$schema}}"."{{$table}}" WHERE (
+// 		SELECT {{range $i, $p := $columns}}{{if $i}},{{end}}
+// 			"{{$p.SQLName}}"
+// 		{{- end}}
+// 		FROM "{{$schema}}"."{{$table}}" WHERE (
 // 			{{- range $i, $p := .Properties -}}
 // 				{{if $i}}, {{end}}"{{.SQLName}}"
 // 			{{- end -}}
@@ -240,8 +243,7 @@ import "encoding/base64"
 // 			{{- range $i, $p := .Properties -}}
 // 				{{if $i}}, {{end}}{{sqlParam $i}}
 // 			{{- end -}}
-// 		) LIMIT 1
-// 		`
+// 		) LIMIT 1`
 // 	Update{{$key.CapitalName}} = `
 // 		UPDATE "{{$schema}}"."{{$table}}" __ut__
 // 		SET {{range $i, $p := $columns}}{{if $i}},
@@ -360,10 +362,11 @@ var content = mustDecode(
 		"LkNhcGl0YWxOYW1lfX0pIGRlbGV0ZVNRTCgpIFF1ZXJ5IHsKCXJldHVybiBRdWVyeXtEZWxldGV7eyRrZXkuQ2FwaXRhbE5hbWV9" +
 		"fSwgW11pbnRlcmZhY2V7fXsKCQl7ey0gcmFuZ2UgJGksICRlIDo9ICRrZXkuUHJvcGVydGllc319CgkJay57eyRlLkNhcGl0YWxO" +
 		"YW1lfX0sCgkJe3stIGVuZH19Cgl9fQp9Cgpjb25zdCAoCglTZWxlY3R7eyRrZXkuQ2FwaXRhbE5hbWV9fSA9IGAKCQlTRUxFQ1Qg" +
-		"KiBGUk9NICJ7eyRzY2hlbWF9fSIuInt7JHRhYmxlfX0iIFdIRVJFICgKCQkJe3stIHJhbmdlICRpLCAkcCA6PSAuUHJvcGVydGll" +
-		"cyAtfX0KCQkJCXt7aWYgJGl9fSwge3tlbmR9fSJ7ey5TUUxOYW1lfX0iCgkJCXt7LSBlbmQgLX19CgkJKSA9ICgKCQkJe3stIHJh" +
-		"bmdlICRpLCAkcCA6PSAuUHJvcGVydGllcyAtfX0KCQkJCXt7aWYgJGl9fSwge3tlbmR9fXt7c3FsUGFyYW0gJGl9fQoJCQl7ey0g" +
-		"ZW5kIC19fQoJCSkgTElNSVQgMQoJCWAKCVVwZGF0ZXt7JGtleS5DYXBpdGFsTmFtZX19ID0gYAoJCVVQREFURSAie3skc2NoZW1h" +
+		"e3tyYW5nZSAkaSwgJHAgOj0gJGNvbHVtbnN9fXt7aWYgJGl9fSx7e2VuZH19CgkJCSJ7eyRwLlNRTE5hbWV9fSIKCQl7ey0gZW5k" +
+		"fX0KCQlGUk9NICJ7eyRzY2hlbWF9fSIuInt7JHRhYmxlfX0iIFdIRVJFICgKCQkJe3stIHJhbmdlICRpLCAkcCA6PSAuUHJvcGVy" +
+		"dGllcyAtfX0KCQkJCXt7aWYgJGl9fSwge3tlbmR9fSJ7ey5TUUxOYW1lfX0iCgkJCXt7LSBlbmQgLX19CgkJKSA9ICgKCQkJe3st" +
+		"IHJhbmdlICRpLCAkcCA6PSAuUHJvcGVydGllcyAtfX0KCQkJCXt7aWYgJGl9fSwge3tlbmR9fXt7c3FsUGFyYW0gJGl9fQoJCQl7" +
+		"ey0gZW5kIC19fQoJCSkgTElNSVQgMWAKCVVwZGF0ZXt7JGtleS5DYXBpdGFsTmFtZX19ID0gYAoJCVVQREFURSAie3skc2NoZW1h" +
 		"fX0iLiJ7eyR0YWJsZX19IiBfX3V0X18KCQlTRVQge3tyYW5nZSAkaSwgJHAgOj0gJGNvbHVtbnN9fXt7aWYgJGl9fSwKCQkJe3tl" +
 		"bmR9fSJ7eyRwLlNRTE5hbWV9fSIgPSBDT0FMRVNDRShfX2NoX18uInt7JHAuU1FMTmFtZX19IiwgX191dF9fLiJ7eyRwLlNRTE5h" +
 		"bWV9fSIpCgkJe3stIGVuZH19CgkJRlJPTSAoU0VMRUNUICogRlJPTSBqc29uX3BvcHVsYXRlX3JlY29yZChudWxsOjoie3skc2No" +

@@ -70,8 +70,12 @@ func (k PkCategories) deleteSQL() Query {
 
 const (
 	SelectPkCategories = `
-		SELECT * FROM "public"."categories" WHERE ("category_id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"category_id",
+			"category_name",
+			"description",
+			"picture"
+		FROM "public"."categories" WHERE ("category_id") = ($1) LIMIT 1`
 	UpdatePkCategories = `
 		UPDATE "public"."categories" __ut__
 		SET "category_id" = COALESCE(__ch__."category_id", __ut__."category_id"),

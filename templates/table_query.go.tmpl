@@ -78,7 +78,10 @@ func (k {{$key.CapitalName}}) deleteSQL() Query {
 
 const (
 	Select{{$key.CapitalName}} = `
-		SELECT * FROM "{{$schema}}"."{{$table}}" WHERE (
+		SELECT {{range $i, $p := $columns}}{{if $i}},{{end}}
+			"{{$p.SQLName}}"
+		{{- end}}
+		FROM "{{$schema}}"."{{$table}}" WHERE (
 			{{- range $i, $p := .Properties -}}
 				{{if $i}}, {{end}}"{{.SQLName}}"
 			{{- end -}}
@@ -86,8 +89,7 @@ const (
 			{{- range $i, $p := .Properties -}}
 				{{if $i}}, {{end}}{{sqlParam $i}}
 			{{- end -}}
-		) LIMIT 1
-		`
+		) LIMIT 1`
 	Update{{$key.CapitalName}} = `
 		UPDATE "{{$schema}}"."{{$table}}" __ut__
 		SET {{range $i, $p := $columns}}{{if $i}},

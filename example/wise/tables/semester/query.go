@@ -65,8 +65,11 @@ func (k SemesterPkey) deleteSQL() Query {
 
 const (
 	SelectSemesterPkey = `
-		SELECT * FROM "wise"."semester" WHERE ("id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"id",
+			"year",
+			"season"
+		FROM "wise"."semester" WHERE ("id") = ($1) LIMIT 1`
 	UpdateSemesterPkey = `
 		UPDATE "wise"."semester" __ut__
 		SET "id" = COALESCE(__ch__."id", __ut__."id"),
@@ -101,8 +104,11 @@ func (k SemesterYearSeasonKey) deleteSQL() Query {
 
 const (
 	SelectSemesterYearSeasonKey = `
-		SELECT * FROM "wise"."semester" WHERE ("year", "season") = ($1, $2) LIMIT 1
-		`
+		SELECT 
+			"id",
+			"year",
+			"season"
+		FROM "wise"."semester" WHERE ("year", "season") = ($1, $2) LIMIT 1`
 	UpdateSemesterYearSeasonKey = `
 		UPDATE "wise"."semester" __ut__
 		SET "id" = COALESCE(__ch__."id", __ut__."id"),

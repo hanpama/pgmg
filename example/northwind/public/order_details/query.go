@@ -78,8 +78,13 @@ func (k PkOrderDetails) deleteSQL() Query {
 
 const (
 	SelectPkOrderDetails = `
-		SELECT * FROM "public"."order_details" WHERE ("order_id", "product_id") = ($1, $2) LIMIT 1
-		`
+		SELECT 
+			"order_id",
+			"product_id",
+			"unit_price",
+			"quantity",
+			"discount"
+		FROM "public"."order_details" WHERE ("order_id", "product_id") = ($1, $2) LIMIT 1`
 	UpdatePkOrderDetails = `
 		UPDATE "public"."order_details" __ut__
 		SET "order_id" = COALESCE(__ch__."order_id", __ut__."order_id"),

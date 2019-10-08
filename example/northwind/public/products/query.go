@@ -100,8 +100,18 @@ func (k PkProducts) deleteSQL() Query {
 
 const (
 	SelectPkProducts = `
-		SELECT * FROM "public"."products" WHERE ("product_id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"product_id",
+			"product_name",
+			"supplier_id",
+			"category_id",
+			"quantity_per_unit",
+			"unit_price",
+			"units_in_stock",
+			"units_on_order",
+			"reorder_level",
+			"discontinued"
+		FROM "public"."products" WHERE ("product_id") = ($1) LIMIT 1`
 	UpdatePkProducts = `
 		UPDATE "public"."products" __ut__
 		SET "product_id" = COALESCE(__ch__."product_id", __ut__."product_id"),

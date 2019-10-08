@@ -75,8 +75,13 @@ func (k LecturePkey) deleteSQL() Query {
 
 const (
 	SelectLecturePkey = `
-		SELECT * FROM "wise"."lecture" WHERE ("id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"id",
+			"title",
+			"semester_id",
+			"course_id",
+			"tutor_id"
+		FROM "wise"."lecture" WHERE ("id") = ($1) LIMIT 1`
 	UpdateLecturePkey = `
 		UPDATE "wise"."lecture" __ut__
 		SET "id" = COALESCE(__ch__."id", __ut__."id"),
@@ -116,8 +121,13 @@ func (k LectureSemesterIDCourseIDTutorIDKey) deleteSQL() Query {
 
 const (
 	SelectLectureSemesterIDCourseIDTutorIDKey = `
-		SELECT * FROM "wise"."lecture" WHERE ("semester_id", "course_id", "tutor_id") = ($1, $2, $3) LIMIT 1
-		`
+		SELECT 
+			"id",
+			"title",
+			"semester_id",
+			"course_id",
+			"tutor_id"
+		FROM "wise"."lecture" WHERE ("semester_id", "course_id", "tutor_id") = ($1, $2, $3) LIMIT 1`
 	UpdateLectureSemesterIDCourseIDTutorIDKey = `
 		UPDATE "wise"."lecture" __ut__
 		SET "id" = COALESCE(__ch__."id", __ut__."id"),

@@ -63,8 +63,10 @@ func (k PkEmployeeTerritories) deleteSQL() Query {
 
 const (
 	SelectPkEmployeeTerritories = `
-		SELECT * FROM "public"."employee_territories" WHERE ("employee_id", "territory_id") = ($1, $2) LIMIT 1
-		`
+		SELECT 
+			"employee_id",
+			"territory_id"
+		FROM "public"."employee_territories" WHERE ("employee_id", "territory_id") = ($1, $2) LIMIT 1`
 	UpdatePkEmployeeTerritories = `
 		UPDATE "public"."employee_territories" __ut__
 		SET "employee_id" = COALESCE(__ch__."employee_id", __ut__."employee_id"),

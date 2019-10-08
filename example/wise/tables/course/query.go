@@ -65,8 +65,11 @@ func (k CoursePkey) deleteSQL() Query {
 
 const (
 	SelectCoursePkey = `
-		SELECT * FROM "wise"."course" WHERE ("id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"id",
+			"title",
+			"credits"
+		FROM "wise"."course" WHERE ("id") = ($1) LIMIT 1`
 	UpdateCoursePkey = `
 		UPDATE "wise"."course" __ut__
 		SET "id" = COALESCE(__ch__."id", __ut__."id"),

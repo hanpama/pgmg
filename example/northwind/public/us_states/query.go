@@ -70,8 +70,12 @@ func (k PkUsstates) deleteSQL() Query {
 
 const (
 	SelectPkUsstates = `
-		SELECT * FROM "public"."us_states" WHERE ("state_id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"state_id",
+			"state_name",
+			"state_abbr",
+			"state_region"
+		FROM "public"."us_states" WHERE ("state_id") = ($1) LIMIT 1`
 	UpdatePkUsstates = `
 		UPDATE "public"."us_states" __ut__
 		SET "state_id" = COALESCE(__ch__."state_id", __ut__."state_id"),

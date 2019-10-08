@@ -140,8 +140,26 @@ func (k PkEmployees) deleteSQL() Query {
 
 const (
 	SelectPkEmployees = `
-		SELECT * FROM "public"."employees" WHERE ("employee_id") = ($1) LIMIT 1
-		`
+		SELECT 
+			"employee_id",
+			"last_name",
+			"first_name",
+			"title",
+			"title_of_courtesy",
+			"birth_date",
+			"hire_date",
+			"address",
+			"city",
+			"region",
+			"postal_code",
+			"country",
+			"home_phone",
+			"extension",
+			"photo",
+			"notes",
+			"reports_to",
+			"photo_path"
+		FROM "public"."employees" WHERE ("employee_id") = ($1) LIMIT 1`
 	UpdatePkEmployees = `
 		UPDATE "public"."employees" __ut__
 		SET "employee_id" = COALESCE(__ch__."employee_id", __ut__."employee_id"),
