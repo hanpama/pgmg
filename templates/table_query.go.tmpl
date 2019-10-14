@@ -7,10 +7,10 @@ package {{.Name}}
 {{$columns := .Properties}}
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -54,14 +54,10 @@ const (
 {{- range $i, $key := .Keys}}
 
 func (k {{$key.CapitalName}}) selectSQL() Query {
-	return Query{Select{{$key.CapitalName}}, []interface{}{
-		{{- range $i, $e := $key.Properties}}
-		k.{{$e.CapitalName}},
-		{{- end}}
-	}}
+	return select{{$key.CapitalName}}Query{k}
 }
 func (k {{$key.CapitalName}}) updateSQL(args ...attribute) Query {
-	return Query{Update{{$key.CapitalName}}, []interface{}{
+	return query{Update{{$key.CapitalName}}, []interface{}{
 		{{- range $i, $e := $key.Properties}}
 		k.{{$e.CapitalName}},
 		{{- end}}
@@ -69,7 +65,7 @@ func (k {{$key.CapitalName}}) updateSQL(args ...attribute) Query {
 	}}
 }
 func (k {{$key.CapitalName}}) deleteSQL() Query {
-	return Query{Delete{{$key.CapitalName}}, []interface{}{
+	return query{Delete{{$key.CapitalName}}, []interface{}{
 		{{- range $i, $e := $key.Properties}}
 		k.{{$e.CapitalName}},
 		{{- end}}
@@ -118,6 +114,15 @@ const (
 		)`
 )
 
+type select{{$key.CapitalName}}Query struct { key {{$key.CapitalName}} }
+
+func (q select{{$key.CapitalName}}Query) SQL() string { return Select{{$key.CapitalName}} }
+func (q select{{$key.CapitalName}}Query) Args() []interface{} { return []interface{} {
+	{{- range $i, $e := $key.Properties -}}
+	{{if $i}}, {{end}}q.key.{{$e.CapitalName}}
+	{{- end -}}
+} }
+
 {{end}}
 
 type key interface {
@@ -126,12 +131,17 @@ type key interface {
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string { return q.sql }
+func (q query) Args() []interface{} { return q.args }
 
 {{end}}
