@@ -2,10 +2,10 @@
 package semester
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -47,18 +47,16 @@ const (
 )
 
 func (k SemesterPkey) selectSQL() Query {
-	return Query{SelectSemesterPkey, []interface{}{
-		k.ID,
-	}}
+	return selectSemesterPkeyQuery{k}
 }
 func (k SemesterPkey) updateSQL(args ...attribute) Query {
-	return Query{UpdateSemesterPkey, []interface{}{
+	return query{UpdateSemesterPkey, []interface{}{
 		k.ID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k SemesterPkey) deleteSQL() Query {
-	return Query{DeleteSemesterPkey, []interface{}{
+	return query{DeleteSemesterPkey, []interface{}{
 		k.ID,
 	}}
 }
@@ -82,21 +80,23 @@ const (
 		WHERE ("id") = ($1)`
 )
 
+type selectSemesterPkeyQuery struct{ key SemesterPkey }
+
+func (q selectSemesterPkeyQuery) SQL() string         { return SelectSemesterPkey }
+func (q selectSemesterPkeyQuery) Args() []interface{} { return []interface{}{q.key.ID} }
+
 func (k SemesterYearSeasonKey) selectSQL() Query {
-	return Query{SelectSemesterYearSeasonKey, []interface{}{
-		k.Year,
-		k.Season,
-	}}
+	return selectSemesterYearSeasonKeyQuery{k}
 }
 func (k SemesterYearSeasonKey) updateSQL(args ...attribute) Query {
-	return Query{UpdateSemesterYearSeasonKey, []interface{}{
+	return query{UpdateSemesterYearSeasonKey, []interface{}{
 		k.Year,
 		k.Season,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k SemesterYearSeasonKey) deleteSQL() Query {
-	return Query{DeleteSemesterYearSeasonKey, []interface{}{
+	return query{DeleteSemesterYearSeasonKey, []interface{}{
 		k.Year,
 		k.Season,
 	}}
@@ -121,16 +121,28 @@ const (
 		WHERE ("year", "season") = ($1, $2)`
 )
 
+type selectSemesterYearSeasonKeyQuery struct{ key SemesterYearSeasonKey }
+
+func (q selectSemesterYearSeasonKeyQuery) SQL() string { return SelectSemesterYearSeasonKey }
+func (q selectSemesterYearSeasonKeyQuery) Args() []interface{} {
+	return []interface{}{q.key.Year, q.key.Season}
+}
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

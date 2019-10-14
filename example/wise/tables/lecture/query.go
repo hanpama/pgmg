@@ -2,10 +2,10 @@
 package lecture
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -57,18 +57,16 @@ const (
 )
 
 func (k LecturePkey) selectSQL() Query {
-	return Query{SelectLecturePkey, []interface{}{
-		k.ID,
-	}}
+	return selectLecturePkeyQuery{k}
 }
 func (k LecturePkey) updateSQL(args ...attribute) Query {
-	return Query{UpdateLecturePkey, []interface{}{
+	return query{UpdateLecturePkey, []interface{}{
 		k.ID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k LecturePkey) deleteSQL() Query {
-	return Query{DeleteLecturePkey, []interface{}{
+	return query{DeleteLecturePkey, []interface{}{
 		k.ID,
 	}}
 }
@@ -96,15 +94,16 @@ const (
 		WHERE ("id") = ($1)`
 )
 
+type selectLecturePkeyQuery struct{ key LecturePkey }
+
+func (q selectLecturePkeyQuery) SQL() string         { return SelectLecturePkey }
+func (q selectLecturePkeyQuery) Args() []interface{} { return []interface{}{q.key.ID} }
+
 func (k LectureSemesterIDCourseIDTutorIDKey) selectSQL() Query {
-	return Query{SelectLectureSemesterIDCourseIDTutorIDKey, []interface{}{
-		k.SemesterID,
-		k.CourseID,
-		k.TutorID,
-	}}
+	return selectLectureSemesterIDCourseIDTutorIDKeyQuery{k}
 }
 func (k LectureSemesterIDCourseIDTutorIDKey) updateSQL(args ...attribute) Query {
-	return Query{UpdateLectureSemesterIDCourseIDTutorIDKey, []interface{}{
+	return query{UpdateLectureSemesterIDCourseIDTutorIDKey, []interface{}{
 		k.SemesterID,
 		k.CourseID,
 		k.TutorID,
@@ -112,7 +111,7 @@ func (k LectureSemesterIDCourseIDTutorIDKey) updateSQL(args ...attribute) Query 
 	}}
 }
 func (k LectureSemesterIDCourseIDTutorIDKey) deleteSQL() Query {
-	return Query{DeleteLectureSemesterIDCourseIDTutorIDKey, []interface{}{
+	return query{DeleteLectureSemesterIDCourseIDTutorIDKey, []interface{}{
 		k.SemesterID,
 		k.CourseID,
 		k.TutorID,
@@ -142,16 +141,32 @@ const (
 		WHERE ("semester_id", "course_id", "tutor_id") = ($1, $2, $3)`
 )
 
+type selectLectureSemesterIDCourseIDTutorIDKeyQuery struct {
+	key LectureSemesterIDCourseIDTutorIDKey
+}
+
+func (q selectLectureSemesterIDCourseIDTutorIDKeyQuery) SQL() string {
+	return SelectLectureSemesterIDCourseIDTutorIDKey
+}
+func (q selectLectureSemesterIDCourseIDTutorIDKeyQuery) Args() []interface{} {
+	return []interface{}{q.key.SemesterID, q.key.CourseID, q.key.TutorID}
+}
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

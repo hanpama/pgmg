@@ -2,10 +2,10 @@
 package us_states
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -52,18 +52,16 @@ const (
 )
 
 func (k PkUsstates) selectSQL() Query {
-	return Query{SelectPkUsstates, []interface{}{
-		k.StateID,
-	}}
+	return selectPkUsstatesQuery{k}
 }
 func (k PkUsstates) updateSQL(args ...attribute) Query {
-	return Query{UpdatePkUsstates, []interface{}{
+	return query{UpdatePkUsstates, []interface{}{
 		k.StateID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k PkUsstates) deleteSQL() Query {
-	return Query{DeletePkUsstates, []interface{}{
+	return query{DeletePkUsstates, []interface{}{
 		k.StateID,
 	}}
 }
@@ -89,16 +87,26 @@ const (
 		WHERE ("state_id") = ($1)`
 )
 
+type selectPkUsstatesQuery struct{ key PkUsstates }
+
+func (q selectPkUsstatesQuery) SQL() string         { return SelectPkUsstates }
+func (q selectPkUsstatesQuery) Args() []interface{} { return []interface{}{q.key.StateID} }
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

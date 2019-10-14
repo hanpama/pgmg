@@ -2,10 +2,10 @@
 package order_details
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -57,20 +57,17 @@ const (
 )
 
 func (k PkOrderDetails) selectSQL() Query {
-	return Query{SelectPkOrderDetails, []interface{}{
-		k.OrderID,
-		k.ProductID,
-	}}
+	return selectPkOrderDetailsQuery{k}
 }
 func (k PkOrderDetails) updateSQL(args ...attribute) Query {
-	return Query{UpdatePkOrderDetails, []interface{}{
+	return query{UpdatePkOrderDetails, []interface{}{
 		k.OrderID,
 		k.ProductID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k PkOrderDetails) deleteSQL() Query {
-	return Query{DeletePkOrderDetails, []interface{}{
+	return query{DeletePkOrderDetails, []interface{}{
 		k.OrderID,
 		k.ProductID,
 	}}
@@ -99,16 +96,28 @@ const (
 		WHERE ("order_id", "product_id") = ($1, $2)`
 )
 
+type selectPkOrderDetailsQuery struct{ key PkOrderDetails }
+
+func (q selectPkOrderDetailsQuery) SQL() string { return SelectPkOrderDetails }
+func (q selectPkOrderDetailsQuery) Args() []interface{} {
+	return []interface{}{q.key.OrderID, q.key.ProductID}
+}
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

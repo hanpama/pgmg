@@ -2,10 +2,10 @@
 package customers
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -87,18 +87,16 @@ const (
 )
 
 func (k PkCustomers) selectSQL() Query {
-	return Query{SelectPkCustomers, []interface{}{
-		k.CustomerID,
-	}}
+	return selectPkCustomersQuery{k}
 }
 func (k PkCustomers) updateSQL(args ...attribute) Query {
-	return Query{UpdatePkCustomers, []interface{}{
+	return query{UpdatePkCustomers, []interface{}{
 		k.CustomerID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k PkCustomers) deleteSQL() Query {
-	return Query{DeletePkCustomers, []interface{}{
+	return query{DeletePkCustomers, []interface{}{
 		k.CustomerID,
 	}}
 }
@@ -138,16 +136,26 @@ const (
 		WHERE ("customer_id") = ($1)`
 )
 
+type selectPkCustomersQuery struct{ key PkCustomers }
+
+func (q selectPkCustomersQuery) SQL() string         { return SelectPkCustomers }
+func (q selectPkCustomersQuery) Args() []interface{} { return []interface{}{q.key.CustomerID} }
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

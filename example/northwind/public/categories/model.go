@@ -78,7 +78,7 @@ func (v CategoryName) Value() interface{} { return (string)(v) }
 func (v Description) ApplyTo(r *Record)   { r.Description = (*string)(&v) }
 func (v Description) Column() string      { return "description" }
 func (v Description) Value() interface{}  { return (string)(v) }
-func (v Picture) ApplyTo(r *Record)       { r.Picture = ([]byte)(&v) }
+func (v Picture) ApplyTo(r *Record)       { r.Picture = ([]byte)(v) }
 func (v Picture) Column() string          { return "picture" }
 func (v Picture) Value() interface{}      { return ([]byte)(v) }
 

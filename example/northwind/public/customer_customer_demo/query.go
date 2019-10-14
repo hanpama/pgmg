@@ -2,10 +2,10 @@
 package customer_customer_demo
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -42,20 +42,17 @@ const (
 )
 
 func (k PkCustomerCustomerDemo) selectSQL() Query {
-	return Query{SelectPkCustomerCustomerDemo, []interface{}{
-		k.CustomerID,
-		k.CustomerTypeID,
-	}}
+	return selectPkCustomerCustomerDemoQuery{k}
 }
 func (k PkCustomerCustomerDemo) updateSQL(args ...attribute) Query {
-	return Query{UpdatePkCustomerCustomerDemo, []interface{}{
+	return query{UpdatePkCustomerCustomerDemo, []interface{}{
 		k.CustomerID,
 		k.CustomerTypeID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k PkCustomerCustomerDemo) deleteSQL() Query {
-	return Query{DeletePkCustomerCustomerDemo, []interface{}{
+	return query{DeletePkCustomerCustomerDemo, []interface{}{
 		k.CustomerID,
 		k.CustomerTypeID,
 	}}
@@ -78,16 +75,28 @@ const (
 		WHERE ("customer_id", "customer_type_id") = ($1, $2)`
 )
 
+type selectPkCustomerCustomerDemoQuery struct{ key PkCustomerCustomerDemo }
+
+func (q selectPkCustomerCustomerDemoQuery) SQL() string { return SelectPkCustomerCustomerDemo }
+func (q selectPkCustomerCustomerDemoQuery) Args() []interface{} {
+	return []interface{}{q.key.CustomerID, q.key.CustomerTypeID}
+}
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

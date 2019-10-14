@@ -2,10 +2,10 @@
 package professor
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -47,18 +47,16 @@ const (
 )
 
 func (k ProfessorPkey) selectSQL() Query {
-	return Query{SelectProfessorPkey, []interface{}{
-		k.ID,
-	}}
+	return selectProfessorPkeyQuery{k}
 }
 func (k ProfessorPkey) updateSQL(args ...attribute) Query {
-	return Query{UpdateProfessorPkey, []interface{}{
+	return query{UpdateProfessorPkey, []interface{}{
 		k.ID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k ProfessorPkey) deleteSQL() Query {
-	return Query{DeleteProfessorPkey, []interface{}{
+	return query{DeleteProfessorPkey, []interface{}{
 		k.ID,
 	}}
 }
@@ -82,16 +80,26 @@ const (
 		WHERE ("id") = ($1)`
 )
 
+type selectProfessorPkeyQuery struct{ key ProfessorPkey }
+
+func (q selectProfessorPkeyQuery) SQL() string         { return SelectProfessorPkey }
+func (q selectProfessorPkeyQuery) Args() []interface{} { return []interface{}{q.key.ID} }
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

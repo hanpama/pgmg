@@ -2,10 +2,10 @@
 package territories
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -47,18 +47,16 @@ const (
 )
 
 func (k PkTerritories) selectSQL() Query {
-	return Query{SelectPkTerritories, []interface{}{
-		k.TerritoryID,
-	}}
+	return selectPkTerritoriesQuery{k}
 }
 func (k PkTerritories) updateSQL(args ...attribute) Query {
-	return Query{UpdatePkTerritories, []interface{}{
+	return query{UpdatePkTerritories, []interface{}{
 		k.TerritoryID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k PkTerritories) deleteSQL() Query {
-	return Query{DeletePkTerritories, []interface{}{
+	return query{DeletePkTerritories, []interface{}{
 		k.TerritoryID,
 	}}
 }
@@ -82,16 +80,26 @@ const (
 		WHERE ("territory_id") = ($1)`
 )
 
+type selectPkTerritoriesQuery struct{ key PkTerritories }
+
+func (q selectPkTerritoriesQuery) SQL() string         { return SelectPkTerritories }
+func (q selectPkTerritoriesQuery) Args() []interface{} { return []interface{}{q.key.TerritoryID} }
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }

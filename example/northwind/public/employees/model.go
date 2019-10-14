@@ -156,7 +156,7 @@ func (v HomePhone) Value() interface{}       { return (string)(v) }
 func (v Extension) ApplyTo(r *Record)        { r.Extension = (*string)(&v) }
 func (v Extension) Column() string           { return "extension" }
 func (v Extension) Value() interface{}       { return (string)(v) }
-func (v Photo) ApplyTo(r *Record)            { r.Photo = ([]byte)(&v) }
+func (v Photo) ApplyTo(r *Record)            { r.Photo = ([]byte)(v) }
 func (v Photo) Column() string               { return "photo" }
 func (v Photo) Value() interface{}           { return ([]byte)(v) }
 func (v Notes) ApplyTo(r *Record)            { r.Notes = (*string)(&v) }

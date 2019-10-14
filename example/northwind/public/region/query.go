@@ -2,10 +2,10 @@
 package region
 
 func Insert(vss ...Values) Query {
-	return Query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func InsertReturning(vss ...Values) Query {
-	return Query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
+	return query{InsertReturningSQL, []interface{}{string(mustMarshalJSON(vss))}}
 }
 func Select(k key) Query {
 	return k.selectSQL()
@@ -42,18 +42,16 @@ const (
 )
 
 func (k PkRegion) selectSQL() Query {
-	return Query{SelectPkRegion, []interface{}{
-		k.RegionID,
-	}}
+	return selectPkRegionQuery{k}
 }
 func (k PkRegion) updateSQL(args ...attribute) Query {
-	return Query{UpdatePkRegion, []interface{}{
+	return query{UpdatePkRegion, []interface{}{
 		k.RegionID,
 		string(mustMarshalJSON(Values(args))),
 	}}
 }
 func (k PkRegion) deleteSQL() Query {
-	return Query{DeletePkRegion, []interface{}{
+	return query{DeletePkRegion, []interface{}{
 		k.RegionID,
 	}}
 }
@@ -75,16 +73,26 @@ const (
 		WHERE ("region_id") = ($1)`
 )
 
+type selectPkRegionQuery struct{ key PkRegion }
+
+func (q selectPkRegionQuery) SQL() string         { return SelectPkRegion }
+func (q selectPkRegionQuery) Args() []interface{} { return []interface{}{q.key.RegionID} }
+
 type key interface {
 	selectSQL() Query
 	updateSQL(args ...attribute) Query
 	deleteSQL() Query
 }
 
-type Query struct {
+type Query interface {
+	SQL() string
+	Args() []interface{}
+}
+
+type query struct {
 	sql  string
 	args []interface{}
 }
 
-func (q Query) SQL() string         { return q.sql }
-func (q Query) Args() []interface{} { return q.args }
+func (q query) SQL() string         { return q.sql }
+func (q query) Args() []interface{} { return q.args }
