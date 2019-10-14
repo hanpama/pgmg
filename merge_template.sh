@@ -1,0 +1,1 @@
+go run github.com/hanpama/mergeb64 -in 'templates/*.go.tmpl' -out templates/merged_gen.go

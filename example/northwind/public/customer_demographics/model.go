@@ -26,7 +26,7 @@ func (r *Record) Receive() []interface{} {
 
 type Recordset []Record
 
-func (rs *Recordset) ReceiveNext() []interface{} {
+func (rs *Recordset) Receive() []interface{} {
 	*rs = append(*rs, Record{})
 	return (*rs)[len(*rs)-1].Receive()
 }
