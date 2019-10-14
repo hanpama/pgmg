@@ -78,7 +78,7 @@ type attribute interface {
 }
 
 {{- range $i, $v := .Properties }}
-func (v {{$v.CapitalName}}) ApplyTo(r *Record)  { r.{{$v.CapitalName}} = ({{$v.SelectType}})({{ if $v.SelectNullable }}&{{end}}v) }
+func (v {{$v.CapitalName}}) ApplyTo(r *Record)  { r.{{$v.CapitalName}} = ({{$v.SelectType}})({{ if $v.ShouldApplyReference }}&{{end}}v) }
 func (v {{$v.CapitalName}}) Column() string     { return "{{$v.SQLName}}" }
 func (v {{$v.CapitalName}}) Value() interface{} { return ({{$v.BaseType}})(v) }
 {{- end}}

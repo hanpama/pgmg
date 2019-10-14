@@ -79,7 +79,9 @@ func (p *property) SelectType() string {
 	return p.t.Name
 }
 func (p *property) InsertRequired() bool { return !p.c.IsNullable && p.c.Default == "" }
-func (p *property) SelectNullable() bool { return p.c.IsNullable }
+func (p *property) ShouldApplyReference() bool {
+	return p.c.IsNullable && (p.t.Name != p.t.NullableName)
+}
 func (p *property) NullableType() string { return p.t.NullableName }
 func (p *property) Default() string      { return p.c.Default }
 
