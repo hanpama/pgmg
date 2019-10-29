@@ -7,14 +7,16 @@ import (
 	"github.com/hanpama/pgmg/dsl"
 )
 
-type lectureTable struct {
-	dsl.TableReference
-	ID         lectureTableIDColumn
-	Title      lectureTableTitleColumn
-	SemesterID lectureTableSemesterIDColumn
-	CourseID   lectureTableCourseIDColumn
-	TutorID    lectureTableTutorIDColumn
+type LectureRow struct {
+	ID         int32  `json:"id"`
+	Title      string `json:"title"`
+	SemesterID int32  `json:"semester_id"`
+	CourseID   int32  `json:"course_id"`
+	TutorID    int32  `json:"tutor_id"`
 }
+
+// Lecture represents table lecture
+var Lecture = newLectureTable("")
 
 func newLectureTable(alias string) *lectureTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `lecture`, Alias: alias}
@@ -38,8 +40,14 @@ func newLectureTable(alias string) *lectureTable {
 	}
 }
 
-// Lecture represents table lecture
-var Lecture = newLectureTable("")
+type lectureTable struct {
+	dsl.TableReference
+	ID         lectureTableIDColumn
+	Title      lectureTableTitleColumn
+	SemesterID lectureTableSemesterIDColumn
+	CourseID   lectureTableCourseIDColumn
+	TutorID    lectureTableTutorIDColumn
+}
 
 func (t *lectureTable) As(alias string) *lectureTable { return newLectureTable(alias) }
 func (t *lectureTable) AllColumns() []interface{} {
@@ -113,14 +121,6 @@ func (lectureTableCourseIDValue) lectureColumn() string         { return "course
 func (v lectureTableCourseIDValue) lectureValue() interface{}   { return (int32)(v) }
 func (lectureTableTutorIDValue) lectureColumn() string          { return "tutor_id" }
 func (v lectureTableTutorIDValue) lectureValue() interface{}    { return (int32)(v) }
-
-type LectureRow struct {
-	ID         int32  `json:"id"`
-	Title      string `json:"title"`
-	SemesterID int32  `json:"semester_id"`
-	CourseID   int32  `json:"course_id"`
-	TutorID    int32  `json:"tutor_id"`
-}
 
 func (r *LectureRow) Receive() []interface{} {
 	return []interface{}{&r.ID, &r.Title, &r.SemesterID, &r.CourseID, &r.TutorID}

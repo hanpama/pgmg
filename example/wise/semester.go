@@ -7,12 +7,14 @@ import (
 	"github.com/hanpama/pgmg/dsl"
 )
 
-type semesterTable struct {
-	dsl.TableReference
-	ID     semesterTableIDColumn
-	Year   semesterTableYearColumn
-	Season semesterTableSeasonColumn
+type SemesterRow struct {
+	ID     int32  `json:"id"`
+	Year   int32  `json:"year"`
+	Season string `json:"season"`
 }
+
+// Semester represents table semester
+var Semester = newSemesterTable("")
 
 func newSemesterTable(alias string) *semesterTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `semester`, Alias: alias}
@@ -30,8 +32,12 @@ func newSemesterTable(alias string) *semesterTable {
 	}
 }
 
-// Semester represents table semester
-var Semester = newSemesterTable("")
+type semesterTable struct {
+	dsl.TableReference
+	ID     semesterTableIDColumn
+	Year   semesterTableYearColumn
+	Season semesterTableSeasonColumn
+}
 
 func (t *semesterTable) As(alias string) *semesterTable { return newSemesterTable(alias) }
 func (t *semesterTable) AllColumns() []interface{} {
@@ -87,12 +93,6 @@ func (semesterTableYearValue) semesterColumn() string         { return "year" }
 func (v semesterTableYearValue) semesterValue() interface{}   { return (int32)(v) }
 func (semesterTableSeasonValue) semesterColumn() string       { return "season" }
 func (v semesterTableSeasonValue) semesterValue() interface{} { return (string)(v) }
-
-type SemesterRow struct {
-	ID     int32  `json:"id"`
-	Year   int32  `json:"year"`
-	Season string `json:"season"`
-}
 
 func (r *SemesterRow) Receive() []interface{} {
 	return []interface{}{&r.ID, &r.Year, &r.Season}

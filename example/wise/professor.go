@@ -7,12 +7,14 @@ import (
 	"github.com/hanpama/pgmg/dsl"
 )
 
-type professorTable struct {
-	dsl.TableReference
-	ID         professorTableIDColumn
-	FamilyName professorTableFamilyNameColumn
-	GivenName  professorTableGivenNameColumn
+type ProfessorRow struct {
+	ID         int32  `json:"id"`
+	FamilyName string `json:"family_name"`
+	GivenName  string `json:"given_name"`
 }
+
+// Professor represents table professor
+var Professor = newProfessorTable("")
 
 func newProfessorTable(alias string) *professorTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `professor`, Alias: alias}
@@ -30,8 +32,12 @@ func newProfessorTable(alias string) *professorTable {
 	}
 }
 
-// Professor represents table professor
-var Professor = newProfessorTable("")
+type professorTable struct {
+	dsl.TableReference
+	ID         professorTableIDColumn
+	FamilyName professorTableFamilyNameColumn
+	GivenName  professorTableGivenNameColumn
+}
 
 func (t *professorTable) As(alias string) *professorTable { return newProfessorTable(alias) }
 func (t *professorTable) AllColumns() []interface{} {
@@ -87,12 +93,6 @@ func (professorTableFamilyNameValue) professorColumn() string       { return "fa
 func (v professorTableFamilyNameValue) professorValue() interface{} { return (string)(v) }
 func (professorTableGivenNameValue) professorColumn() string        { return "given_name" }
 func (v professorTableGivenNameValue) professorValue() interface{}  { return (string)(v) }
-
-type ProfessorRow struct {
-	ID         int32  `json:"id"`
-	FamilyName string `json:"family_name"`
-	GivenName  string `json:"given_name"`
-}
 
 func (r *ProfessorRow) Receive() []interface{} {
 	return []interface{}{&r.ID, &r.FamilyName, &r.GivenName}

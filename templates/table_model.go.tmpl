@@ -10,12 +10,14 @@ import (
 	"github.com/hanpama/pgmg/dsl"
 )
 
-type {{$m.LowerName}}Table struct {
-	dsl.TableReference
-	{{- range $i, $p := $m.Properties}}
-    {{$p.CapitalName}} {{$m.LowerName}}Table{{$p.CapitalName}}Column
+type {{$m.CapitalName}}Row struct {
+  {{- range $i, $p := $m.Properties}}
+    {{$p.CapitalName}} {{$p.SelectType}} `json:"{{$p.SQLName}}"`
 	{{- end}}
 }
+
+// {{$m.CapitalName}} represents table {{$m.SQLName}}
+var {{$m.CapitalName}} = new{{$m.CapitalName}}Table("")
 
 func new{{$m.CapitalName}}Table(alias string) *{{$m.LowerName}}Table {
 	table := dsl.TableReference{TableSchema: `{{$m.Schema}}`, TableName: `{{$m.SQLName}}`, Alias: alias}
@@ -28,8 +30,12 @@ func new{{$m.CapitalName}}Table(alias string) *{{$m.LowerName}}Table {
 	}
 }
 
-// {{$m.CapitalName}} represents table {{$m.SQLName}}
-var {{$m.CapitalName}} = new{{$m.CapitalName}}Table("")
+type {{$m.LowerName}}Table struct {
+	dsl.TableReference
+	{{- range $i, $p := $m.Properties}}
+    {{$p.CapitalName}} {{$m.LowerName}}Table{{$p.CapitalName}}Column
+	{{- end}}
+}
 
 func (t *{{$m.LowerName}}Table) As(alias string) *{{$m.LowerName}}Table { return new{{$m.CapitalName}}Table(alias) }
 func (t *{{$m.LowerName}}Table) AllColumns() []interface{} {
@@ -83,12 +89,6 @@ func ({{$m.LowerName}}Table{{$p.CapitalName}}Column) New(val {{$p.BaseType}}) {{
 func ({{$m.LowerName}}Table{{$p.CapitalName}}Value) {{$m.LowerName}}Column() string { return "{{$p.SQLName}}" }
 func (v {{$m.LowerName}}Table{{$p.CapitalName}}Value) {{$m.LowerName}}Value() interface{} { return ({{$p.BaseType}})(v) }
 {{- end }}
-
-type {{$m.CapitalName}}Row struct {
-  {{- range $i, $p := $m.Properties}}
-    {{$p.CapitalName}} {{$p.SelectType}} `json:"{{$p.SQLName}}"`
-	{{- end}}
-}
 
 func (r *{{$m.CapitalName}}Row) Receive() []interface{} {
 	return []interface{}{

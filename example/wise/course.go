@@ -7,12 +7,14 @@ import (
 	"github.com/hanpama/pgmg/dsl"
 )
 
-type courseTable struct {
-	dsl.TableReference
-	ID      courseTableIDColumn
-	Title   courseTableTitleColumn
-	Credits courseTableCreditsColumn
+type CourseRow struct {
+	ID      int32  `json:"id"`
+	Title   string `json:"title"`
+	Credits int32  `json:"credits"`
 }
+
+// Course represents table course
+var Course = newCourseTable("")
 
 func newCourseTable(alias string) *courseTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `course`, Alias: alias}
@@ -30,8 +32,12 @@ func newCourseTable(alias string) *courseTable {
 	}
 }
 
-// Course represents table course
-var Course = newCourseTable("")
+type courseTable struct {
+	dsl.TableReference
+	ID      courseTableIDColumn
+	Title   courseTableTitleColumn
+	Credits courseTableCreditsColumn
+}
 
 func (t *courseTable) As(alias string) *courseTable { return newCourseTable(alias) }
 func (t *courseTable) AllColumns() []interface{} {
@@ -85,12 +91,6 @@ func (courseTableTitleValue) courseColumn() string         { return "title" }
 func (v courseTableTitleValue) courseValue() interface{}   { return (string)(v) }
 func (courseTableCreditsValue) courseColumn() string       { return "credits" }
 func (v courseTableCreditsValue) courseValue() interface{} { return (int32)(v) }
-
-type CourseRow struct {
-	ID      int32  `json:"id"`
-	Title   string `json:"title"`
-	Credits int32  `json:"credits"`
-}
 
 func (r *CourseRow) Receive() []interface{} {
 	return []interface{}{&r.ID, &r.Title, &r.Credits}
