@@ -13,7 +13,7 @@ import (
 type {{$m.LowerName}}Table struct {
 	dsl.TableReference
 	{{- range $i, $p := $m.Properties}}
-    {{$p.CapitalName}} dsl.ColumnReference
+    {{$p.CapitalName}} {{$m.LowerName}}Table{{$p.CapitalName}}Column
 	{{- end}}
 }
 
@@ -22,8 +22,9 @@ func new{{$m.CapitalName}}Table(alias string) *{{$m.LowerName}}Table {
 	return &{{$m.LowerName}}Table{
 		table,
 		{{- range $i, $p := $m.Properties}}
-		dsl.ColumnReference{TableReference: table, ColumnName: "{{$p.SQLName}}"},
-		{{- end}}
+		{{$m.LowerName}}Table{{$p.CapitalName}}Column{
+			dsl.ColumnReference{TableReference: table, ColumnName: "{{$p.SQLName}}"},
+		},{{- end}}
 	}
 }
 
@@ -44,9 +45,12 @@ type {{$m.LowerName}}ColumnValue interface {
 
 type {{$m.CapitalName}}Values []{{$m.LowerName}}ColumnValue
 
+
+func (t *{{$m.LowerName}}Table) Values(vals ...{{$m.LowerName}}ColumnValue) {{$m.CapitalName}}Values { return vals }
+
 func (t *{{$m.LowerName}}Table) Input(
 	{{ range $i, $p := $m.Properties }}{{ if $p.InsertRequired -}}
-	{{ $p.LowerName }} {{$m.LowerName}}Table{{$p.CapitalName}},
+	{{ $p.LowerName }} {{$m.LowerName}}Table{{$p.CapitalName}}Value,
 	{{ end }}{{ end -}}
 	optional ...{{$m.LowerName}}ColumnValue,
 ) {{$m.CapitalName}}Values {
@@ -66,16 +70,18 @@ func (vs {{$m.CapitalName}}Values) MarshalJSON() (b []byte, err error) {
 }
 
 {{ range $i, $p := $m.Properties }}
-func (t *{{$m.LowerName}}Table) New{{ $p.CapitalName }}(val {{$p.BaseType}}) {{$m.LowerName}}Table{{$p.CapitalName}} { return {{$m.LowerName}}Table{{$p.CapitalName}}(val) }
+type {{$m.LowerName}}Table{{$p.CapitalName}}Column struct { dsl.ColumnReference }
+type {{$m.LowerName}}Table{{$p.CapitalName}}Value {{$p.BaseType}}
 {{- end }}
 
 {{ range $i, $p := $m.Properties }}
-type {{$m.LowerName}}Table{{$p.CapitalName}} {{$p.BaseType}}
+func ({{$m.LowerName}}Table{{$p.CapitalName}}Column) New(val {{$p.BaseType}}) {{$m.LowerName}}Table{{$p.CapitalName}}Value { return {{$m.LowerName}}Table{{$p.CapitalName}}Value(val) }
 {{- end }}
 
+
 {{ range $i, $p := $m.Properties }}
-func ({{$m.LowerName}}Table{{$p.CapitalName}}) {{$m.LowerName}}Column() string { return "{{$p.SQLName}}" }
-func (v {{$m.LowerName}}Table{{$p.CapitalName}}) {{$m.LowerName}}Value() interface{} { return ({{$p.BaseType}})(v) }
+func ({{$m.LowerName}}Table{{$p.CapitalName}}Value) {{$m.LowerName}}Column() string { return "{{$p.SQLName}}" }
+func (v {{$m.LowerName}}Table{{$p.CapitalName}}Value) {{$m.LowerName}}Value() interface{} { return ({{$p.BaseType}})(v) }
 {{- end }}
 
 type {{$m.CapitalName}}Row struct {

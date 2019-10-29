@@ -9,18 +9,24 @@ import (
 
 type courseTable struct {
 	dsl.TableReference
-	ID      dsl.ColumnReference
-	Title   dsl.ColumnReference
-	Credits dsl.ColumnReference
+	ID      courseTableIDColumn
+	Title   courseTableTitleColumn
+	Credits courseTableCreditsColumn
 }
 
 func newCourseTable(alias string) *courseTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `course`, Alias: alias}
 	return &courseTable{
 		table,
-		dsl.ColumnReference{TableReference: table, ColumnName: "id"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "title"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "credits"},
+		courseTableIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "id"},
+		},
+		courseTableTitleColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "title"},
+		},
+		courseTableCreditsColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "credits"},
+		},
 	}
 }
 
@@ -39,9 +45,11 @@ type courseColumnValue interface {
 
 type CourseValues []courseColumnValue
 
+func (t *courseTable) Values(vals ...courseColumnValue) CourseValues { return vals }
+
 func (t *courseTable) Input(
-	title courseTableTitle,
-	credits courseTableCredits,
+	title courseTableTitleValue,
+	credits courseTableCreditsValue,
 	optional ...courseColumnValue,
 ) CourseValues {
 	return append(CourseValues{
@@ -58,20 +66,25 @@ func (vs CourseValues) MarshalJSON() (b []byte, err error) {
 	return json.Marshal(r)
 }
 
-func (t *courseTable) NewID(val int32) courseTableID           { return courseTableID(val) }
-func (t *courseTable) NewTitle(val string) courseTableTitle    { return courseTableTitle(val) }
-func (t *courseTable) NewCredits(val int32) courseTableCredits { return courseTableCredits(val) }
+type courseTableIDColumn struct{ dsl.ColumnReference }
+type courseTableIDValue int32
+type courseTableTitleColumn struct{ dsl.ColumnReference }
+type courseTableTitleValue string
+type courseTableCreditsColumn struct{ dsl.ColumnReference }
+type courseTableCreditsValue int32
 
-type courseTableID int32
-type courseTableTitle string
-type courseTableCredits int32
+func (courseTableIDColumn) New(val int32) courseTableIDValue        { return courseTableIDValue(val) }
+func (courseTableTitleColumn) New(val string) courseTableTitleValue { return courseTableTitleValue(val) }
+func (courseTableCreditsColumn) New(val int32) courseTableCreditsValue {
+	return courseTableCreditsValue(val)
+}
 
-func (courseTableID) courseColumn() string            { return "id" }
-func (v courseTableID) courseValue() interface{}      { return (int32)(v) }
-func (courseTableTitle) courseColumn() string         { return "title" }
-func (v courseTableTitle) courseValue() interface{}   { return (string)(v) }
-func (courseTableCredits) courseColumn() string       { return "credits" }
-func (v courseTableCredits) courseValue() interface{} { return (int32)(v) }
+func (courseTableIDValue) courseColumn() string            { return "id" }
+func (v courseTableIDValue) courseValue() interface{}      { return (int32)(v) }
+func (courseTableTitleValue) courseColumn() string         { return "title" }
+func (v courseTableTitleValue) courseValue() interface{}   { return (string)(v) }
+func (courseTableCreditsValue) courseColumn() string       { return "credits" }
+func (v courseTableCreditsValue) courseValue() interface{} { return (int32)(v) }
 
 type CourseRow struct {
 	ID      int32  `json:"id"`

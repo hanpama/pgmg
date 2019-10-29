@@ -12,8 +12,8 @@ func TestE2E(t *testing.T) {
 	withTx(func(tx *sql.Tx) {
 		// values marshaling
 		b, err := json.Marshal(wise.Professor.Input(
-			wise.Professor.NewFamilyName("Ming"),
-			wise.Professor.NewGivenName("Zhiwei"),
+			wise.Professor.FamilyName.New("Ming"),
+			wise.Professor.GivenName.New("Zhiwei"),
 		))
 		if err != nil {
 			t.Error(err)
@@ -65,7 +65,7 @@ func TestE2E(t *testing.T) {
 
 		// update by changeset
 		b, err = json.Marshal(wise.ProfessorValues{
-			wise.Professor.NewFamilyName("Shu"),
+			wise.Professor.FamilyName.New("Shu"),
 		})
 		if err != nil {
 			t.Error(err)

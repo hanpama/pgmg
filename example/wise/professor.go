@@ -9,18 +9,24 @@ import (
 
 type professorTable struct {
 	dsl.TableReference
-	ID         dsl.ColumnReference
-	FamilyName dsl.ColumnReference
-	GivenName  dsl.ColumnReference
+	ID         professorTableIDColumn
+	FamilyName professorTableFamilyNameColumn
+	GivenName  professorTableGivenNameColumn
 }
 
 func newProfessorTable(alias string) *professorTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `professor`, Alias: alias}
 	return &professorTable{
 		table,
-		dsl.ColumnReference{TableReference: table, ColumnName: "id"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "family_name"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "given_name"},
+		professorTableIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "id"},
+		},
+		professorTableFamilyNameColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "family_name"},
+		},
+		professorTableGivenNameColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "given_name"},
+		},
 	}
 }
 
@@ -39,9 +45,11 @@ type professorColumnValue interface {
 
 type ProfessorValues []professorColumnValue
 
+func (t *professorTable) Values(vals ...professorColumnValue) ProfessorValues { return vals }
+
 func (t *professorTable) Input(
-	familyName professorTableFamilyName,
-	givenName professorTableGivenName,
+	familyName professorTableFamilyNameValue,
+	givenName professorTableGivenNameValue,
 	optional ...professorColumnValue,
 ) ProfessorValues {
 	return append(ProfessorValues{
@@ -58,24 +66,27 @@ func (vs ProfessorValues) MarshalJSON() (b []byte, err error) {
 	return json.Marshal(r)
 }
 
-func (t *professorTable) NewID(val int32) professorTableID { return professorTableID(val) }
-func (t *professorTable) NewFamilyName(val string) professorTableFamilyName {
-	return professorTableFamilyName(val)
+type professorTableIDColumn struct{ dsl.ColumnReference }
+type professorTableIDValue int32
+type professorTableFamilyNameColumn struct{ dsl.ColumnReference }
+type professorTableFamilyNameValue string
+type professorTableGivenNameColumn struct{ dsl.ColumnReference }
+type professorTableGivenNameValue string
+
+func (professorTableIDColumn) New(val int32) professorTableIDValue { return professorTableIDValue(val) }
+func (professorTableFamilyNameColumn) New(val string) professorTableFamilyNameValue {
+	return professorTableFamilyNameValue(val)
 }
-func (t *professorTable) NewGivenName(val string) professorTableGivenName {
-	return professorTableGivenName(val)
+func (professorTableGivenNameColumn) New(val string) professorTableGivenNameValue {
+	return professorTableGivenNameValue(val)
 }
 
-type professorTableID int32
-type professorTableFamilyName string
-type professorTableGivenName string
-
-func (professorTableID) professorColumn() string               { return "id" }
-func (v professorTableID) professorValue() interface{}         { return (int32)(v) }
-func (professorTableFamilyName) professorColumn() string       { return "family_name" }
-func (v professorTableFamilyName) professorValue() interface{} { return (string)(v) }
-func (professorTableGivenName) professorColumn() string        { return "given_name" }
-func (v professorTableGivenName) professorValue() interface{}  { return (string)(v) }
+func (professorTableIDValue) professorColumn() string               { return "id" }
+func (v professorTableIDValue) professorValue() interface{}         { return (int32)(v) }
+func (professorTableFamilyNameValue) professorColumn() string       { return "family_name" }
+func (v professorTableFamilyNameValue) professorValue() interface{} { return (string)(v) }
+func (professorTableGivenNameValue) professorColumn() string        { return "given_name" }
+func (v professorTableGivenNameValue) professorValue() interface{}  { return (string)(v) }
 
 type ProfessorRow struct {
 	ID         int32  `json:"id"`
