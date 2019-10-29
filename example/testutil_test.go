@@ -2,35 +2,16 @@ package example_test
 
 import (
 	"database/sql"
-	"encoding/json"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 
-	"github.com/kr/pretty"
 	_ "github.com/lib/pq"
 )
 
-func testJSONSnapshot(t *testing.T, name string, res interface{}) {
-	resB, err := json.Marshal(res)
-	if err != nil {
-		panic(err)
-	}
-	path := filepath.Join("__snapshots__", name+".json")
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		ioutil.WriteFile(path, resB, os.ModePerm)
-		t.Logf("Wrote snapshot: %s(%s)", name, path)
-		return
-	}
-	snapshotB, err := ioutil.ReadFile(path)
-
-	if string(resB) != string(snapshotB) {
-		pretty.Log(string(resB), string(snapshotB))
-		t.Fail()
-	}
+type testCases []struct {
+	name      string
+	test      func() string
+	expecting string
 }
 
 func withTx(fn func(tx *sql.Tx)) {
@@ -42,6 +23,7 @@ func withTx(fn func(tx *sql.Tx)) {
 	if err != nil {
 		panic(err)
 	}
+
 	defer tx.Rollback()
 	fn(tx)
 }

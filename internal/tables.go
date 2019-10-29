@@ -9,18 +9,15 @@ import (
 	"github.com/knq/snaker"
 )
 
-func RenderTableModel(t *Table) ([]byte, error) {
-	var buff bytes.Buffer
-	err := templates.Tmpl.ExecuteTemplate(&buff, "table_model", &model{t})
-	if err != nil {
-		return nil, err
+func RenderTableModel(packageName string, t *Table) ([]byte, error) {
+	type templateArgs struct {
+		PackageName string
+		Model       *model
 	}
-	return format.Source(buff.Bytes())
-}
-
-func RenderTableQuery(t *Table) ([]byte, error) {
 	var buff bytes.Buffer
-	err := templates.Tmpl.ExecuteTemplate(&buff, "table_query", &model{t})
+	err := templates.Tmpl.ExecuteTemplate(&buff, "table_model", templateArgs{
+		packageName, &model{t},
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -40,8 +37,10 @@ func (m *model) Dependencies() (mods []string) {
 	return mods
 }
 
-func (m *model) Name() string   { return m.t.Name }
-func (m *model) Schema() string { return m.t.Schema }
+func (m *model) LowerName() string   { return snaker.ForceLowerCamelIdentifier(m.t.Name) }
+func (m *model) CapitalName() string { return snaker.ForceCamelIdentifier(m.t.Name) }
+func (m *model) SQLName() string     { return m.t.Name }
+func (m *model) Schema() string      { return m.t.Schema }
 
 func (m *model) Properties() (props []property) {
 	for i := range m.t.Columns {

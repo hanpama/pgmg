@@ -1,5 +1,3 @@
-/// 데이터베이스를 introspect 해서 테이블 스키마를 Go 구조체로 된 모델로 만듭니다.
-
 package main
 
 import (
@@ -8,24 +6,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
-	"strings"
 
 	"github.com/hanpama/pgmg/internal"
 	_ "github.com/lib/pq"
 )
 
 const help = `usage: pgmg table <connection_string> <schema_name> <outdir>
-	OR pgmg query <connection_string> <sql_glob>
 
 See https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING
 for more information about connection string parameters.
 
 Tables generation:
   go run github.com/hanpama/pgmg table 'user=postgres dbname=pgmg sslmode=disable' public public
-
-Query generation:
-  go run github.com/hanpama/pgmg query 'user=postgres dbname=pgmg sslmode=disable' 'example/northwind/queries/*.sql'
 `
 
 func main() {
@@ -46,18 +38,8 @@ func main() {
 		outDir := os.Args[4]
 		runTableMode(dbURL, schema, outDir)
 
-	} else if mode == "query" {
-		if len(os.Args) != 4 {
-			fmt.Fprintf(os.Stdin, help)
-			fmt.Fprint(os.Stderr, "Invalid number of arguments")
-			return
-		}
-		dbURL := os.Args[2]
-		glob := os.Args[3]
-		runQueryMode(dbURL, glob)
-
 	} else {
-		fmt.Fprint(os.Stderr, "Mode should be 'table' or 'query'")
+		fmt.Fprint(os.Stderr, "Mode should be 'table'")
 		return
 	}
 }
@@ -73,71 +55,17 @@ func runTableMode(dbURL string, schema string, outDir string) {
 	}
 
 	ensureMkdir(outDir)
+
 	for _, table := range tables {
 		println(table.Name)
-		tableDir := path.Join(outDir, table.Name)
-		ensureMkdir(tableDir)
-		tableModelPath := path.Join(tableDir, "model.go")
+		tableModelPath := path.Join(outDir, table.Name+".go")
 
-		b, err := internal.RenderTableModel(&table)
+		b, err := internal.RenderTableModel(path.Base(outDir), &table)
 		if err != nil {
 			println(string(b))
 			panic(err)
 		}
 		err = ioutil.WriteFile(tableModelPath, b, os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
-
-		queryPath := path.Join(tableDir, "query.go")
-
-		b, err = internal.RenderTableQuery(&table)
-		if err != nil {
-			println(string(b))
-			panic(err)
-		}
-		err = ioutil.WriteFile(queryPath, b, os.ModePerm)
-		if err != nil {
-			panic(err)
-		}
-	}
-}
-
-func runQueryMode(dbURL, glob string) {
-	tx := createTx(dbURL)
-	defer tx.Rollback()
-
-	files, err := filepath.Glob(glob)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, fp := range files {
-		filename := filepath.Base(fp)
-		println(fp)
-
-		name := strings.Split(filename, ".")[0]
-
-		b, err := ioutil.ReadFile(fp)
-		if err != nil {
-			panic(err)
-		}
-		query := string(b)
-		qi, err := internal.IntrospectQuery(tx, name, query)
-		if err != nil {
-			panic(err)
-		}
-
-		b, err = internal.RenderQuery(&qi)
-		if err != nil {
-			panic(err)
-		}
-
-		dir := filepath.Join(filepath.Dir(fp), name)
-
-		ensureMkdir(dir)
-
-		err = ioutil.WriteFile(filepath.Join(dir, name+".go"), b, os.ModePerm)
 		if err != nil {
 			panic(err)
 		}

@@ -11,5 +11,5 @@ var funcs = template.FuncMap{
 }
 
 var Tmpl = template.Must(template.New("pgmg").Funcs(funcs).Parse(
-	string(QueryGoTmpl) + string(TableModelGoTmpl) + string(TableQueryGoTmpl),
+	string(TableModelGoTmpl),
 ))
