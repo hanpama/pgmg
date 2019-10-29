@@ -9,18 +9,24 @@ import (
 
 type semesterTable struct {
 	dsl.TableReference
-	ID     dsl.ColumnReference
-	Year   dsl.ColumnReference
-	Season dsl.ColumnReference
+	ID     semesterTableIDColumn
+	Year   semesterTableYearColumn
+	Season semesterTableSeasonColumn
 }
 
 func newSemesterTable(alias string) *semesterTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `semester`, Alias: alias}
 	return &semesterTable{
 		table,
-		dsl.ColumnReference{TableReference: table, ColumnName: "id"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "year"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "season"},
+		semesterTableIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "id"},
+		},
+		semesterTableYearColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "year"},
+		},
+		semesterTableSeasonColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "season"},
+		},
 	}
 }
 
@@ -39,9 +45,11 @@ type semesterColumnValue interface {
 
 type SemesterValues []semesterColumnValue
 
+func (t *semesterTable) Values(vals ...semesterColumnValue) SemesterValues { return vals }
+
 func (t *semesterTable) Input(
-	year semesterTableYear,
-	season semesterTableSeason,
+	year semesterTableYearValue,
+	season semesterTableSeasonValue,
 	optional ...semesterColumnValue,
 ) SemesterValues {
 	return append(SemesterValues{
@@ -58,20 +66,27 @@ func (vs SemesterValues) MarshalJSON() (b []byte, err error) {
 	return json.Marshal(r)
 }
 
-func (t *semesterTable) NewID(val int32) semesterTableID          { return semesterTableID(val) }
-func (t *semesterTable) NewYear(val int32) semesterTableYear      { return semesterTableYear(val) }
-func (t *semesterTable) NewSeason(val string) semesterTableSeason { return semesterTableSeason(val) }
+type semesterTableIDColumn struct{ dsl.ColumnReference }
+type semesterTableIDValue int32
+type semesterTableYearColumn struct{ dsl.ColumnReference }
+type semesterTableYearValue int32
+type semesterTableSeasonColumn struct{ dsl.ColumnReference }
+type semesterTableSeasonValue string
 
-type semesterTableID int32
-type semesterTableYear int32
-type semesterTableSeason string
+func (semesterTableIDColumn) New(val int32) semesterTableIDValue { return semesterTableIDValue(val) }
+func (semesterTableYearColumn) New(val int32) semesterTableYearValue {
+	return semesterTableYearValue(val)
+}
+func (semesterTableSeasonColumn) New(val string) semesterTableSeasonValue {
+	return semesterTableSeasonValue(val)
+}
 
-func (semesterTableID) semesterColumn() string           { return "id" }
-func (v semesterTableID) semesterValue() interface{}     { return (int32)(v) }
-func (semesterTableYear) semesterColumn() string         { return "year" }
-func (v semesterTableYear) semesterValue() interface{}   { return (int32)(v) }
-func (semesterTableSeason) semesterColumn() string       { return "season" }
-func (v semesterTableSeason) semesterValue() interface{} { return (string)(v) }
+func (semesterTableIDValue) semesterColumn() string           { return "id" }
+func (v semesterTableIDValue) semesterValue() interface{}     { return (int32)(v) }
+func (semesterTableYearValue) semesterColumn() string         { return "year" }
+func (v semesterTableYearValue) semesterValue() interface{}   { return (int32)(v) }
+func (semesterTableSeasonValue) semesterColumn() string       { return "season" }
+func (v semesterTableSeasonValue) semesterValue() interface{} { return (string)(v) }
 
 type SemesterRow struct {
 	ID     int32  `json:"id"`

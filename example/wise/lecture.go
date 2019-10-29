@@ -9,22 +9,32 @@ import (
 
 type lectureTable struct {
 	dsl.TableReference
-	ID         dsl.ColumnReference
-	Title      dsl.ColumnReference
-	SemesterID dsl.ColumnReference
-	CourseID   dsl.ColumnReference
-	TutorID    dsl.ColumnReference
+	ID         lectureTableIDColumn
+	Title      lectureTableTitleColumn
+	SemesterID lectureTableSemesterIDColumn
+	CourseID   lectureTableCourseIDColumn
+	TutorID    lectureTableTutorIDColumn
 }
 
 func newLectureTable(alias string) *lectureTable {
 	table := dsl.TableReference{TableSchema: `wise`, TableName: `lecture`, Alias: alias}
 	return &lectureTable{
 		table,
-		dsl.ColumnReference{TableReference: table, ColumnName: "id"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "title"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "semester_id"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "course_id"},
-		dsl.ColumnReference{TableReference: table, ColumnName: "tutor_id"},
+		lectureTableIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "id"},
+		},
+		lectureTableTitleColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "title"},
+		},
+		lectureTableSemesterIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "semester_id"},
+		},
+		lectureTableCourseIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "course_id"},
+		},
+		lectureTableTutorIDColumn{
+			dsl.ColumnReference{TableReference: table, ColumnName: "tutor_id"},
+		},
 	}
 }
 
@@ -43,11 +53,13 @@ type lectureColumnValue interface {
 
 type LectureValues []lectureColumnValue
 
+func (t *lectureTable) Values(vals ...lectureColumnValue) LectureValues { return vals }
+
 func (t *lectureTable) Input(
-	title lectureTableTitle,
-	semesterID lectureTableSemesterID,
-	courseID lectureTableCourseID,
-	tutorID lectureTableTutorID,
+	title lectureTableTitleValue,
+	semesterID lectureTableSemesterIDValue,
+	courseID lectureTableCourseIDValue,
+	tutorID lectureTableTutorIDValue,
 	optional ...lectureColumnValue,
 ) LectureValues {
 	return append(LectureValues{
@@ -66,30 +78,41 @@ func (vs LectureValues) MarshalJSON() (b []byte, err error) {
 	return json.Marshal(r)
 }
 
-func (t *lectureTable) NewID(val int32) lectureTableID        { return lectureTableID(val) }
-func (t *lectureTable) NewTitle(val string) lectureTableTitle { return lectureTableTitle(val) }
-func (t *lectureTable) NewSemesterID(val int32) lectureTableSemesterID {
-	return lectureTableSemesterID(val)
+type lectureTableIDColumn struct{ dsl.ColumnReference }
+type lectureTableIDValue int32
+type lectureTableTitleColumn struct{ dsl.ColumnReference }
+type lectureTableTitleValue string
+type lectureTableSemesterIDColumn struct{ dsl.ColumnReference }
+type lectureTableSemesterIDValue int32
+type lectureTableCourseIDColumn struct{ dsl.ColumnReference }
+type lectureTableCourseIDValue int32
+type lectureTableTutorIDColumn struct{ dsl.ColumnReference }
+type lectureTableTutorIDValue int32
+
+func (lectureTableIDColumn) New(val int32) lectureTableIDValue { return lectureTableIDValue(val) }
+func (lectureTableTitleColumn) New(val string) lectureTableTitleValue {
+	return lectureTableTitleValue(val)
 }
-func (t *lectureTable) NewCourseID(val int32) lectureTableCourseID { return lectureTableCourseID(val) }
-func (t *lectureTable) NewTutorID(val int32) lectureTableTutorID   { return lectureTableTutorID(val) }
+func (lectureTableSemesterIDColumn) New(val int32) lectureTableSemesterIDValue {
+	return lectureTableSemesterIDValue(val)
+}
+func (lectureTableCourseIDColumn) New(val int32) lectureTableCourseIDValue {
+	return lectureTableCourseIDValue(val)
+}
+func (lectureTableTutorIDColumn) New(val int32) lectureTableTutorIDValue {
+	return lectureTableTutorIDValue(val)
+}
 
-type lectureTableID int32
-type lectureTableTitle string
-type lectureTableSemesterID int32
-type lectureTableCourseID int32
-type lectureTableTutorID int32
-
-func (lectureTableID) lectureColumn() string               { return "id" }
-func (v lectureTableID) lectureValue() interface{}         { return (int32)(v) }
-func (lectureTableTitle) lectureColumn() string            { return "title" }
-func (v lectureTableTitle) lectureValue() interface{}      { return (string)(v) }
-func (lectureTableSemesterID) lectureColumn() string       { return "semester_id" }
-func (v lectureTableSemesterID) lectureValue() interface{} { return (int32)(v) }
-func (lectureTableCourseID) lectureColumn() string         { return "course_id" }
-func (v lectureTableCourseID) lectureValue() interface{}   { return (int32)(v) }
-func (lectureTableTutorID) lectureColumn() string          { return "tutor_id" }
-func (v lectureTableTutorID) lectureValue() interface{}    { return (int32)(v) }
+func (lectureTableIDValue) lectureColumn() string               { return "id" }
+func (v lectureTableIDValue) lectureValue() interface{}         { return (int32)(v) }
+func (lectureTableTitleValue) lectureColumn() string            { return "title" }
+func (v lectureTableTitleValue) lectureValue() interface{}      { return (string)(v) }
+func (lectureTableSemesterIDValue) lectureColumn() string       { return "semester_id" }
+func (v lectureTableSemesterIDValue) lectureValue() interface{} { return (int32)(v) }
+func (lectureTableCourseIDValue) lectureColumn() string         { return "course_id" }
+func (v lectureTableCourseIDValue) lectureValue() interface{}   { return (int32)(v) }
+func (lectureTableTutorIDValue) lectureColumn() string          { return "tutor_id" }
+func (v lectureTableTutorIDValue) lectureValue() interface{}    { return (int32)(v) }
 
 type LectureRow struct {
 	ID         int32  `json:"id"`
