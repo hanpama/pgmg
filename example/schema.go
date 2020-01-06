@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// Database represents PostgresQL database
-type Database interface {
+// PGMGDatabase represents PostgresQL database
+type PGMGDatabase interface {
 	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
 	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
@@ -183,7 +183,7 @@ func (r *SemesterRow) SemesterPkey() SemesterPkey {
 }
 
 // GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
-func GetBySemesterPkey(ctx context.Context, db Database, keys ...SemesterPkey) (rows []*SemesterRow, err error) {
+func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows []*SemesterRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -216,7 +216,7 @@ func GetBySemesterPkey(ctx context.Context, db Database, keys ...SemesterPkey) (
 }
 
 // SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
-func SaveBySemesterPkey(ctx context.Context, db Database, rows ...*SemesterRow) ([]*SemesterRow, error) {
+func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -240,7 +240,7 @@ func SaveBySemesterPkey(ctx context.Context, db Database, rows ...*SemesterRow) 
 }
 
 // DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
-func DeleteBySemesterPkey(ctx context.Context, db Database, keys ...SemesterPkey) (int64, error) {
+func DeleteBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err
@@ -269,7 +269,7 @@ func (r *SemesterRow) SemesterYearSeasonKey() SemesterYearSeasonKey {
 }
 
 // GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
-func GetBySemesterYearSeasonKey(ctx context.Context, db Database, keys ...SemesterYearSeasonKey) (rows []*SemesterRow, err error) {
+func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows []*SemesterRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -302,7 +302,7 @@ func GetBySemesterYearSeasonKey(ctx context.Context, db Database, keys ...Semest
 }
 
 // SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
-func SaveBySemesterYearSeasonKey(ctx context.Context, db Database, rows ...*SemesterRow) ([]*SemesterRow, error) {
+func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -326,7 +326,7 @@ func SaveBySemesterYearSeasonKey(ctx context.Context, db Database, rows ...*Seme
 }
 
 // DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
-func DeleteBySemesterYearSeasonKey(ctx context.Context, db Database, keys ...SemesterYearSeasonKey) (int64, error) {
+func DeleteBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err
@@ -354,7 +354,7 @@ func (r *LectureRow) LecturePkey() LecturePkey {
 }
 
 // GetByLecturePkey gets matching rows for given LecturePkey keys from table "lecture"
-func GetByLecturePkey(ctx context.Context, db Database, keys ...LecturePkey) (rows []*LectureRow, err error) {
+func GetByLecturePkey(ctx context.Context, db PGMGDatabase, keys ...LecturePkey) (rows []*LectureRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -387,7 +387,7 @@ func GetByLecturePkey(ctx context.Context, db Database, keys ...LecturePkey) (ro
 }
 
 // SaveByLecturePkey upserts the given rows for table "lecture" checking uniqueness by contstraint "lecture_pkey"
-func SaveByLecturePkey(ctx context.Context, db Database, rows ...*LectureRow) ([]*LectureRow, error) {
+func SaveByLecturePkey(ctx context.Context, db PGMGDatabase, rows ...*LectureRow) ([]*LectureRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -413,7 +413,7 @@ func SaveByLecturePkey(ctx context.Context, db Database, rows ...*LectureRow) ([
 }
 
 // DeleteByLecturePkey deletes matching rows by LecturePkey keys from table "lecture"
-func DeleteByLecturePkey(ctx context.Context, db Database, keys ...LecturePkey) (int64, error) {
+func DeleteByLecturePkey(ctx context.Context, db PGMGDatabase, keys ...LecturePkey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err
@@ -445,7 +445,7 @@ func (r *LectureRow) LectureSemesterIDCourseIDTutorIDKey() LectureSemesterIDCour
 }
 
 // GetByLectureSemesterIDCourseIDTutorIDKey gets matching rows for given LectureSemesterIDCourseIDTutorIDKey keys from table "lecture"
-func GetByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db Database, keys ...LectureSemesterIDCourseIDTutorIDKey) (rows []*LectureRow, err error) {
+func GetByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db PGMGDatabase, keys ...LectureSemesterIDCourseIDTutorIDKey) (rows []*LectureRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -478,7 +478,7 @@ func GetByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db Database, 
 }
 
 // SaveByLectureSemesterIDCourseIDTutorIDKey upserts the given rows for table "lecture" checking uniqueness by contstraint "lecture_semester_id_course_id_tutor_id_key"
-func SaveByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db Database, rows ...*LectureRow) ([]*LectureRow, error) {
+func SaveByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db PGMGDatabase, rows ...*LectureRow) ([]*LectureRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -504,7 +504,7 @@ func SaveByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db Database,
 }
 
 // DeleteByLectureSemesterIDCourseIDTutorIDKey deletes matching rows by LectureSemesterIDCourseIDTutorIDKey keys from table "lecture"
-func DeleteByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db Database, keys ...LectureSemesterIDCourseIDTutorIDKey) (int64, error) {
+func DeleteByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db PGMGDatabase, keys ...LectureSemesterIDCourseIDTutorIDKey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err
@@ -533,7 +533,7 @@ func (r *CourseRow) CoursePkey() CoursePkey {
 }
 
 // GetByCoursePkey gets matching rows for given CoursePkey keys from table "course"
-func GetByCoursePkey(ctx context.Context, db Database, keys ...CoursePkey) (rows []*CourseRow, err error) {
+func GetByCoursePkey(ctx context.Context, db PGMGDatabase, keys ...CoursePkey) (rows []*CourseRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -566,7 +566,7 @@ func GetByCoursePkey(ctx context.Context, db Database, keys ...CoursePkey) (rows
 }
 
 // SaveByCoursePkey upserts the given rows for table "course" checking uniqueness by contstraint "course_pkey"
-func SaveByCoursePkey(ctx context.Context, db Database, rows ...*CourseRow) ([]*CourseRow, error) {
+func SaveByCoursePkey(ctx context.Context, db PGMGDatabase, rows ...*CourseRow) ([]*CourseRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -590,7 +590,7 @@ func SaveByCoursePkey(ctx context.Context, db Database, rows ...*CourseRow) ([]*
 }
 
 // DeleteByCoursePkey deletes matching rows by CoursePkey keys from table "course"
-func DeleteByCoursePkey(ctx context.Context, db Database, keys ...CoursePkey) (int64, error) {
+func DeleteByCoursePkey(ctx context.Context, db PGMGDatabase, keys ...CoursePkey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err
@@ -617,7 +617,7 @@ func (r *ProfessorRow) ProfessorPkey() ProfessorPkey {
 }
 
 // GetByProfessorPkey gets matching rows for given ProfessorPkey keys from table "professor"
-func GetByProfessorPkey(ctx context.Context, db Database, keys ...ProfessorPkey) (rows []*ProfessorRow, err error) {
+func GetByProfessorPkey(ctx context.Context, db PGMGDatabase, keys ...ProfessorPkey) (rows []*ProfessorRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -650,7 +650,7 @@ func GetByProfessorPkey(ctx context.Context, db Database, keys ...ProfessorPkey)
 }
 
 // SaveByProfessorPkey upserts the given rows for table "professor" checking uniqueness by contstraint "professor_pkey"
-func SaveByProfessorPkey(ctx context.Context, db Database, rows ...*ProfessorRow) ([]*ProfessorRow, error) {
+func SaveByProfessorPkey(ctx context.Context, db PGMGDatabase, rows ...*ProfessorRow) ([]*ProfessorRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -676,7 +676,7 @@ func SaveByProfessorPkey(ctx context.Context, db Database, rows ...*ProfessorRow
 }
 
 // DeleteByProfessorPkey deletes matching rows by ProfessorPkey keys from table "professor"
-func DeleteByProfessorPkey(ctx context.Context, db Database, keys ...ProfessorPkey) (int64, error) {
+func DeleteByProfessorPkey(ctx context.Context, db PGMGDatabase, keys ...ProfessorPkey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err

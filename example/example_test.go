@@ -123,7 +123,7 @@ type testDB struct {
 	b *sql.Tx
 }
 
-var _ example.Database = (*testDB)(nil)
+var _ example.PGMGDatabase = (*testDB)(nil)
 
 func (db *testDB) QueryScan(ctx context.Context, r func(int) []interface{}, sql string, args ...interface{}) (rowsReceived int, err error) {
 	rows, err := db.b.QueryContext(ctx, sql, args...)

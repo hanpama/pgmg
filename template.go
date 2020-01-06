@@ -19,8 +19,8 @@ import (
 )
 {{- end }}
 
-// Database represents PostgresQL database
-type Database interface {
+// PGMGDatabase represents PostgresQL database
+type PGMGDatabase interface {
 	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
 	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
@@ -83,7 +83,7 @@ func (r *{{$m.CapitalName}}Row) {{$k.CapitalName}}() {{$k.CapitalName}} {
 }
 
 // GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func GetBy{{$k.CapitalName}}(ctx context.Context, db Database, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}Row, err error) {
+func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}Row, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
@@ -116,7 +116,7 @@ func GetBy{{$k.CapitalName}}(ctx context.Context, db Database, keys ...{{$k.Capi
 }
 
 // SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
-func SaveBy{{$k.CapitalName}}(ctx context.Context, db Database, rows ...*{{$m.CapitalName}}Row) ([]*{{$m.CapitalName}}Row, error) {
+func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}Row) ([]*{{$m.CapitalName}}Row, error) {
 	b, err := json.Marshal(rows);
 	if err != nil {
 		return rows, err
@@ -143,7 +143,7 @@ func SaveBy{{$k.CapitalName}}(ctx context.Context, db Database, rows ...*{{$m.Ca
 }
 
 // DeleteBy{{$k.CapitalName}} deletes matching rows by {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func DeleteBy{{$k.CapitalName}}(ctx context.Context, db Database, keys ...{{$k.CapitalName}}) (int64, error) {
+func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (int64, error) {
 	b, err := json.Marshal(keys);
 	if err != nil {
 		return 0, err

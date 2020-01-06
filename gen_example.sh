@@ -1,4 +1,4 @@
 go run github.com/hanpama/pgmg \
   -database 'user=postgres dbname=pgmg sslmode=disable' \
   -schema wise \
-  -out schema.go
+  -out example/schema.go
