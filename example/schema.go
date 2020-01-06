@@ -4,6 +4,7 @@ package example
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -46,127 +47,43 @@ func (r *SemesterRow) receive() []interface{} {
 	return []interface{}{&r.ID, &r.Year, &r.Season}
 }
 
-// LectureRow represents a row for table "lecture"
-type LectureRow struct {
-	ID         *int32 `json:"id"`
-	Title      string `json:"title"`
-	SemesterID int32  `json:"semester_id"`
-	CourseID   int32  `json:"course_id"`
-	TutorID    int32  `json:"tutor_id"`
+// ProductRow represents a row for table "product"
+type ProductRow struct {
+	ID      *int32     `json:"id"`
+	Price   float64    `json:"price"`
+	Stocked time.Time  `json:"stocked"`
+	Sold    *time.Time `json:"sold"`
 }
 
-// LectureRowID represents column "id" of table "lecture"
-type LectureRowID *int32
+// ProductRowID represents column "id" of table "product"
+type ProductRowID *int32
 
-// LectureRowTitle represents column "title" of table "lecture"
-type LectureRowTitle string
+// ProductRowPrice represents column "price" of table "product"
+type ProductRowPrice float64
 
-// LectureRowSemesterID represents column "semester_id" of table "lecture"
-type LectureRowSemesterID int32
+// ProductRowStocked represents column "stocked" of table "product"
+type ProductRowStocked time.Time
 
-// LectureRowCourseID represents column "course_id" of table "lecture"
-type LectureRowCourseID int32
+// ProductRowSold represents column "sold" of table "product"
+type ProductRowSold *time.Time
 
-// LectureRowTutorID represents column "tutor_id" of table "lecture"
-type LectureRowTutorID int32
-
-// NewLectureRow creates a new row for table "lecture" with all column values
-func NewLectureRow(
-	id LectureRowID,
-	title LectureRowTitle,
-	semesterID LectureRowSemesterID,
-	courseID LectureRowCourseID,
-	tutorID LectureRowTutorID,
-) *LectureRow {
-	return &LectureRow{
+// NewProductRow creates a new row for table "product" with all column values
+func NewProductRow(
+	id ProductRowID,
+	price ProductRowPrice,
+	stocked ProductRowStocked,
+	sold ProductRowSold,
+) *ProductRow {
+	return &ProductRow{
 		(*int32)(id),
-		(string)(title),
-		(int32)(semesterID),
-		(int32)(courseID),
-		(int32)(tutorID),
+		(float64)(price),
+		(time.Time)(stocked),
+		(*time.Time)(sold),
 	}
 }
 
-func (r *LectureRow) receive() []interface{} {
-	return []interface{}{&r.ID, &r.Title, &r.SemesterID, &r.CourseID, &r.TutorID}
-}
-
-// CourseRow represents a row for table "course"
-type CourseRow struct {
-	ID      *int32 `json:"id"`
-	Title   string `json:"title"`
-	Credits int32  `json:"credits"`
-}
-
-// CourseRowID represents column "id" of table "course"
-type CourseRowID *int32
-
-// CourseRowTitle represents column "title" of table "course"
-type CourseRowTitle string
-
-// CourseRowCredits represents column "credits" of table "course"
-type CourseRowCredits int32
-
-// NewCourseRow creates a new row for table "course" with all column values
-func NewCourseRow(
-	id CourseRowID,
-	title CourseRowTitle,
-	credits CourseRowCredits,
-) *CourseRow {
-	return &CourseRow{
-		(*int32)(id),
-		(string)(title),
-		(int32)(credits),
-	}
-}
-
-func (r *CourseRow) receive() []interface{} {
-	return []interface{}{&r.ID, &r.Title, &r.Credits}
-}
-
-// ProfessorRow represents a row for table "professor"
-type ProfessorRow struct {
-	ID         *int32     `json:"id"`
-	FamilyName string     `json:"family_name"`
-	GivenName  string     `json:"given_name"`
-	BirthDate  time.Time  `json:"birth_date"`
-	HiredDate  *time.Time `json:"hired_date"`
-}
-
-// ProfessorRowID represents column "id" of table "professor"
-type ProfessorRowID *int32
-
-// ProfessorRowFamilyName represents column "family_name" of table "professor"
-type ProfessorRowFamilyName string
-
-// ProfessorRowGivenName represents column "given_name" of table "professor"
-type ProfessorRowGivenName string
-
-// ProfessorRowBirthDate represents column "birth_date" of table "professor"
-type ProfessorRowBirthDate time.Time
-
-// ProfessorRowHiredDate represents column "hired_date" of table "professor"
-type ProfessorRowHiredDate *time.Time
-
-// NewProfessorRow creates a new row for table "professor" with all column values
-func NewProfessorRow(
-	id ProfessorRowID,
-	familyName ProfessorRowFamilyName,
-	givenName ProfessorRowGivenName,
-	birthDate ProfessorRowBirthDate,
-	hiredDate ProfessorRowHiredDate,
-) *ProfessorRow {
-	return &ProfessorRow{
-		(*int32)(id),
-		(string)(familyName),
-		(string)(givenName),
-		(time.Time)(birthDate),
-		(*time.Time)(hiredDate),
-	}
-}
-
-func (r *ProfessorRow) receive() []interface{} {
-	return []interface{}{&r.ID, &r.FamilyName, &r.GivenName, &r.BirthDate, &r.HiredDate}
+func (r *ProductRow) receive() []interface{} {
+	return []interface{}{&r.ID, &r.Price, &r.Stocked, &r.Sold}
 }
 
 // SemesterPkey represents key defined by UNIQUE constraint "semester_pkey" for table "semester"
@@ -182,6 +99,17 @@ func (r *SemesterRow) SemesterPkey() SemesterPkey {
 	return k
 }
 
+var SQLGetBySemesterPkey = `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			id
+		FROM json_populate_recordset(null::"wise"."semester", $1)
+	)
+	SELECT id, year, season
+	FROM __key JOIN "wise"."semester" AS __table USING (id)
+	ORDER BY __keyindex
+`
+
 // GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
 func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows []*SemesterRow, err error) {
 	var b []byte
@@ -192,16 +120,7 @@ func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPke
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &SemesterRow{}
 		return rows[i].receive()
-	}, `
-		WITH __key AS (
-			SELECT ROW_NUMBER() over () __keyindex,
-				id
-			FROM json_populate_recordset(null::"wise"."semester", $1)
-		)
-		SELECT id, year, season
-		FROM __key JOIN "wise"."semester" AS __table USING (id)
-		ORDER BY __keyindex
-  `, string(b)); err != nil {
+	}, SQLGetBySemesterPkey, string(b)); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
@@ -215,29 +134,63 @@ func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPke
 	return rows, nil
 }
 
+var SQLSaveBySemesterPkey = `
+	WITH __values AS (
+		SELECT
+			COALESCE(__input.id, nextval('wise.semester_id_seq'::regclass)) id,
+			__input.year,
+			__input.season
+		FROM json_populate_recordset(null::"wise"."semester", $1) __input
+	)
+	INSERT INTO "wise"."semester" SELECT * FROM __values
+	ON CONFLICT (id) DO UPDATE
+		SET (id, year, season) = (
+			SELECT id, year, season FROM __values
+		)
+`
+
 // SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
-func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
+func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) error {
+	b, err := json.Marshal(rows)
+	if err != nil {
+		return err
+	}
+	affected, err := db.Exec(ctx, SQLSaveBySemesterPkey, string(b))
+	if err != nil {
+		return err
+	}
+	if affected != int64(len(rows)) {
+		return ErrUnexpectedRowNumberAffected
+	}
+	return nil
+}
+
+// SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
 	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() }, `
-		WITH __values AS (
-			SELECT
-				COALESCE(__input.id, nextval('wise.semester_id_seq'::regclass)) id,
-			  __input.year,
-			  __input.season
-			FROM json_populate_recordset(null::"wise"."semester", $1) __input
-		)
-		INSERT INTO "wise"."semester" SELECT * FROM __values
-		ON CONFLICT (id) DO UPDATE
-			SET (id, year, season) = (
-				SELECT id, year, season FROM __values
-			)
-		RETURNING id, year, season
-	`, string(b))
-	return rows, err
+	affected, err := db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() },
+		SQLSaveBySemesterPkey+" RETURNING id, year, season",
+		string(b),
+	)
+	if err != nil {
+		return rows, err
+	}
+	if affected != len(rows) {
+		return rows, ErrUnexpectedRowNumberAffected
+	}
+	return rows, nil
 }
+
+var SQLDeleteBySemesterPkey = `
+WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
+DELETE FROM "wise"."semester" AS __table
+	USING __key
+	WHERE (__key.id = __table.id)
+	`
 
 // DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
 func DeleteBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (int64, error) {
@@ -245,12 +198,7 @@ func DeleteBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...Semester
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, `
-		WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
-		DELETE FROM "wise"."semester" AS __table
-			USING __key
-			WHERE (__key.id = __table.id)
-			`, string(b))
+	return db.Exec(ctx, SQLDeleteBySemesterPkey, string(b))
 }
 
 // SemesterYearSeasonKey represents key defined by UNIQUE constraint "semester_year_season_key" for table "semester"
@@ -268,6 +216,17 @@ func (r *SemesterRow) SemesterYearSeasonKey() SemesterYearSeasonKey {
 	return k
 }
 
+var SQLGetBySemesterYearSeasonKey = `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			year, season
+		FROM json_populate_recordset(null::"wise"."semester", $1)
+	)
+	SELECT id, year, season
+	FROM __key JOIN "wise"."semester" AS __table USING (year, season)
+	ORDER BY __keyindex
+`
+
 // GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
 func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows []*SemesterRow, err error) {
 	var b []byte
@@ -278,16 +237,7 @@ func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...Se
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &SemesterRow{}
 		return rows[i].receive()
-	}, `
-		WITH __key AS (
-			SELECT ROW_NUMBER() over () __keyindex,
-				year, season
-			FROM json_populate_recordset(null::"wise"."semester", $1)
-		)
-		SELECT id, year, season
-		FROM __key JOIN "wise"."semester" AS __table USING (year, season)
-		ORDER BY __keyindex
-  `, string(b)); err != nil {
+	}, SQLGetBySemesterYearSeasonKey, string(b)); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
@@ -301,29 +251,64 @@ func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...Se
 	return rows, nil
 }
 
+var SQLSaveBySemesterYearSeasonKey = `
+	WITH __values AS (
+		SELECT
+			COALESCE(__input.id, nextval('wise.semester_id_seq'::regclass)) id,
+			__input.year,
+			__input.season
+		FROM json_populate_recordset(null::"wise"."semester", $1) __input
+	)
+	INSERT INTO "wise"."semester" SELECT * FROM __values
+	ON CONFLICT (year, season) DO UPDATE
+		SET (id, year, season) = (
+			SELECT id, year, season FROM __values
+		)
+`
+
 // SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
-func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
+func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) error {
+	b, err := json.Marshal(rows)
+	if err != nil {
+		return err
+	}
+	affected, err := db.Exec(ctx, SQLSaveBySemesterYearSeasonKey, string(b))
+	if err != nil {
+		return err
+	}
+	if affected != int64(len(rows)) {
+		return ErrUnexpectedRowNumberAffected
+	}
+	return nil
+}
+
+// SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
 	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() }, `
-		WITH __values AS (
-			SELECT
-				COALESCE(__input.id, nextval('wise.semester_id_seq'::regclass)) id,
-			  __input.year,
-			  __input.season
-			FROM json_populate_recordset(null::"wise"."semester", $1) __input
-		)
-		INSERT INTO "wise"."semester" SELECT * FROM __values
-		ON CONFLICT (year, season) DO UPDATE
-			SET (id, year, season) = (
-				SELECT id, year, season FROM __values
-			)
-		RETURNING id, year, season
-	`, string(b))
-	return rows, err
+	affected, err := db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() },
+		SQLSaveBySemesterYearSeasonKey+" RETURNING id, year, season",
+		string(b),
+	)
+	if err != nil {
+		return rows, err
+	}
+	if affected != len(rows) {
+		return rows, ErrUnexpectedRowNumberAffected
+	}
+	return rows, nil
 }
+
+var SQLDeleteBySemesterYearSeasonKey = `
+WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
+DELETE FROM "wise"."semester" AS __table
+	USING __key
+	WHERE (__key.year = __table.year)
+	  AND (__key.season = __table.season)
+	`
 
 // DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
 func DeleteBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (int64, error) {
@@ -331,54 +316,50 @@ func DeleteBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ..
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, `
-		WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
-		DELETE FROM "wise"."semester" AS __table
-			USING __key
-			WHERE (__key.year = __table.year)
-			  AND (__key.season = __table.season)
-			`, string(b))
+	return db.Exec(ctx, SQLDeleteBySemesterYearSeasonKey, string(b))
 }
 
-// LecturePkey represents key defined by UNIQUE constraint "lecture_pkey" for table "lecture"
-type LecturePkey struct {
+// ProductPkey represents key defined by UNIQUE constraint "product_pkey" for table "product"
+type ProductPkey struct {
 	ID int32 `json:"id"`
 }
 
-func (r *LectureRow) LecturePkey() LecturePkey {
-	k := LecturePkey{}
+func (r *ProductRow) ProductPkey() ProductPkey {
+	k := ProductPkey{}
 	if r.ID != nil {
 		k.ID = *r.ID
 	}
 	return k
 }
 
-// GetByLecturePkey gets matching rows for given LecturePkey keys from table "lecture"
-func GetByLecturePkey(ctx context.Context, db PGMGDatabase, keys ...LecturePkey) (rows []*LectureRow, err error) {
+var SQLGetByProductPkey = `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			id
+		FROM json_populate_recordset(null::"wise"."product", $1)
+	)
+	SELECT id, price, stocked, sold
+	FROM __key JOIN "wise"."product" AS __table USING (id)
+	ORDER BY __keyindex
+`
+
+// GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
+func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows []*ProductRow, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
 	}
-	rows = make([]*LectureRow, len(keys))
+	rows = make([]*ProductRow, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &LectureRow{}
+		rows[i] = &ProductRow{}
 		return rows[i].receive()
-	}, `
-		WITH __key AS (
-			SELECT ROW_NUMBER() over () __keyindex,
-				id
-			FROM json_populate_recordset(null::"wise"."lecture", $1)
-		)
-		SELECT id, title, semester_id, course_id, tutor_id
-		FROM __key JOIN "wise"."lecture" AS __table USING (id)
-		ORDER BY __keyindex
-  `, string(b)); err != nil {
+	}, SQLGetByProductPkey, string(b)); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
 		if rows[i] == nil {
 			break
-		} else if rows[i].LecturePkey() != keys[i] {
+		} else if rows[i].ProductPkey() != keys[i] {
 			copy(rows[i+1:], rows[i:])
 			rows[i] = nil
 		}
@@ -386,305 +367,72 @@ func GetByLecturePkey(ctx context.Context, db PGMGDatabase, keys ...LecturePkey)
 	return rows, nil
 }
 
-// SaveByLecturePkey upserts the given rows for table "lecture" checking uniqueness by contstraint "lecture_pkey"
-func SaveByLecturePkey(ctx context.Context, db PGMGDatabase, rows ...*LectureRow) ([]*LectureRow, error) {
+var SQLSaveByProductPkey = `
+	WITH __values AS (
+		SELECT
+			COALESCE(__input.id, nextval('wise.product_id_seq'::regclass)) id,
+			__input.price,
+			__input.stocked,
+			__input.sold
+		FROM json_populate_recordset(null::"wise"."product", $1) __input
+	)
+	INSERT INTO "wise"."product" SELECT * FROM __values
+	ON CONFLICT (id) DO UPDATE
+		SET (id, price, stocked, sold) = (
+			SELECT id, price, stocked, sold FROM __values
+		)
+`
+
+// SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
+func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*ProductRow) error {
+	b, err := json.Marshal(rows)
+	if err != nil {
+		return err
+	}
+	affected, err := db.Exec(ctx, SQLSaveByProductPkey, string(b))
+	if err != nil {
+		return err
+	}
+	if affected != int64(len(rows)) {
+		return ErrUnexpectedRowNumberAffected
+	}
+	return nil
+}
+
+// SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*ProductRow) ([]*ProductRow, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
 	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() }, `
-		WITH __values AS (
-			SELECT
-				COALESCE(__input.id, nextval('wise.lecture_id_seq'::regclass)) id,
-			  __input.title,
-			  __input.semester_id,
-			  __input.course_id,
-			  __input.tutor_id
-			FROM json_populate_recordset(null::"wise"."lecture", $1) __input
-		)
-		INSERT INTO "wise"."lecture" SELECT * FROM __values
-		ON CONFLICT (id) DO UPDATE
-			SET (id, title, semester_id, course_id, tutor_id) = (
-				SELECT id, title, semester_id, course_id, tutor_id FROM __values
-			)
-		RETURNING id, title, semester_id, course_id, tutor_id
-	`, string(b))
-	return rows, err
-}
-
-// DeleteByLecturePkey deletes matching rows by LecturePkey keys from table "lecture"
-func DeleteByLecturePkey(ctx context.Context, db PGMGDatabase, keys ...LecturePkey) (int64, error) {
-	b, err := json.Marshal(keys)
+	affected, err := db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() },
+		SQLSaveByProductPkey+" RETURNING id, price, stocked, sold",
+		string(b),
+	)
 	if err != nil {
-		return 0, err
+		return rows, err
 	}
-	return db.Exec(ctx, `
-		WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."lecture", $1))
-		DELETE FROM "wise"."lecture" AS __table
-			USING __key
-			WHERE (__key.id = __table.id)
-			`, string(b))
-}
-
-// LectureSemesterIDCourseIDTutorIDKey represents key defined by UNIQUE constraint "lecture_semester_id_course_id_tutor_id_key" for table "lecture"
-type LectureSemesterIDCourseIDTutorIDKey struct {
-	SemesterID int32 `json:"semester_id"`
-	CourseID   int32 `json:"course_id"`
-	TutorID    int32 `json:"tutor_id"`
-}
-
-func (r *LectureRow) LectureSemesterIDCourseIDTutorIDKey() LectureSemesterIDCourseIDTutorIDKey {
-	k := LectureSemesterIDCourseIDTutorIDKey{}
-	k.SemesterID = r.SemesterID
-
-	k.CourseID = r.CourseID
-
-	k.TutorID = r.TutorID
-
-	return k
-}
-
-// GetByLectureSemesterIDCourseIDTutorIDKey gets matching rows for given LectureSemesterIDCourseIDTutorIDKey keys from table "lecture"
-func GetByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db PGMGDatabase, keys ...LectureSemesterIDCourseIDTutorIDKey) (rows []*LectureRow, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, err
-	}
-	rows = make([]*LectureRow, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &LectureRow{}
-		return rows[i].receive()
-	}, `
-		WITH __key AS (
-			SELECT ROW_NUMBER() over () __keyindex,
-				semester_id, course_id, tutor_id
-			FROM json_populate_recordset(null::"wise"."lecture", $1)
-		)
-		SELECT id, title, semester_id, course_id, tutor_id
-		FROM __key JOIN "wise"."lecture" AS __table USING (semester_id, course_id, tutor_id)
-		ORDER BY __keyindex
-  `, string(b)); err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].LectureSemesterIDCourseIDTutorIDKey() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
+	if affected != len(rows) {
+		return rows, ErrUnexpectedRowNumberAffected
 	}
 	return rows, nil
 }
 
-// SaveByLectureSemesterIDCourseIDTutorIDKey upserts the given rows for table "lecture" checking uniqueness by contstraint "lecture_semester_id_course_id_tutor_id_key"
-func SaveByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db PGMGDatabase, rows ...*LectureRow) ([]*LectureRow, error) {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return rows, err
-	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() }, `
-		WITH __values AS (
-			SELECT
-				COALESCE(__input.id, nextval('wise.lecture_id_seq'::regclass)) id,
-			  __input.title,
-			  __input.semester_id,
-			  __input.course_id,
-			  __input.tutor_id
-			FROM json_populate_recordset(null::"wise"."lecture", $1) __input
-		)
-		INSERT INTO "wise"."lecture" SELECT * FROM __values
-		ON CONFLICT (semester_id, course_id, tutor_id) DO UPDATE
-			SET (id, title, semester_id, course_id, tutor_id) = (
-				SELECT id, title, semester_id, course_id, tutor_id FROM __values
-			)
-		RETURNING id, title, semester_id, course_id, tutor_id
-	`, string(b))
-	return rows, err
-}
+var SQLDeleteByProductPkey = `
+WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."product", $1))
+DELETE FROM "wise"."product" AS __table
+	USING __key
+	WHERE (__key.id = __table.id)
+	`
 
-// DeleteByLectureSemesterIDCourseIDTutorIDKey deletes matching rows by LectureSemesterIDCourseIDTutorIDKey keys from table "lecture"
-func DeleteByLectureSemesterIDCourseIDTutorIDKey(ctx context.Context, db PGMGDatabase, keys ...LectureSemesterIDCourseIDTutorIDKey) (int64, error) {
+// DeleteByProductPkey deletes matching rows by ProductPkey keys from table "product"
+func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (int64, error) {
 	b, err := json.Marshal(keys)
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, `
-		WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."lecture", $1))
-		DELETE FROM "wise"."lecture" AS __table
-			USING __key
-			WHERE (__key.semester_id = __table.semester_id)
-			  AND (__key.course_id = __table.course_id)
-			  AND (__key.tutor_id = __table.tutor_id)
-			`, string(b))
+	return db.Exec(ctx, SQLDeleteByProductPkey, string(b))
 }
 
-// CoursePkey represents key defined by UNIQUE constraint "course_pkey" for table "course"
-type CoursePkey struct {
-	ID int32 `json:"id"`
-}
-
-func (r *CourseRow) CoursePkey() CoursePkey {
-	k := CoursePkey{}
-	if r.ID != nil {
-		k.ID = *r.ID
-	}
-	return k
-}
-
-// GetByCoursePkey gets matching rows for given CoursePkey keys from table "course"
-func GetByCoursePkey(ctx context.Context, db PGMGDatabase, keys ...CoursePkey) (rows []*CourseRow, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, err
-	}
-	rows = make([]*CourseRow, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &CourseRow{}
-		return rows[i].receive()
-	}, `
-		WITH __key AS (
-			SELECT ROW_NUMBER() over () __keyindex,
-				id
-			FROM json_populate_recordset(null::"wise"."course", $1)
-		)
-		SELECT id, title, credits
-		FROM __key JOIN "wise"."course" AS __table USING (id)
-		ORDER BY __keyindex
-  `, string(b)); err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].CoursePkey() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
-	}
-	return rows, nil
-}
-
-// SaveByCoursePkey upserts the given rows for table "course" checking uniqueness by contstraint "course_pkey"
-func SaveByCoursePkey(ctx context.Context, db PGMGDatabase, rows ...*CourseRow) ([]*CourseRow, error) {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return rows, err
-	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() }, `
-		WITH __values AS (
-			SELECT
-				COALESCE(__input.id, nextval('wise.course_id_seq'::regclass)) id,
-			  __input.title,
-			  __input.credits
-			FROM json_populate_recordset(null::"wise"."course", $1) __input
-		)
-		INSERT INTO "wise"."course" SELECT * FROM __values
-		ON CONFLICT (id) DO UPDATE
-			SET (id, title, credits) = (
-				SELECT id, title, credits FROM __values
-			)
-		RETURNING id, title, credits
-	`, string(b))
-	return rows, err
-}
-
-// DeleteByCoursePkey deletes matching rows by CoursePkey keys from table "course"
-func DeleteByCoursePkey(ctx context.Context, db PGMGDatabase, keys ...CoursePkey) (int64, error) {
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return 0, err
-	}
-	return db.Exec(ctx, `
-		WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."course", $1))
-		DELETE FROM "wise"."course" AS __table
-			USING __key
-			WHERE (__key.id = __table.id)
-			`, string(b))
-}
-
-// ProfessorPkey represents key defined by UNIQUE constraint "professor_pkey" for table "professor"
-type ProfessorPkey struct {
-	ID int32 `json:"id"`
-}
-
-func (r *ProfessorRow) ProfessorPkey() ProfessorPkey {
-	k := ProfessorPkey{}
-	if r.ID != nil {
-		k.ID = *r.ID
-	}
-	return k
-}
-
-// GetByProfessorPkey gets matching rows for given ProfessorPkey keys from table "professor"
-func GetByProfessorPkey(ctx context.Context, db PGMGDatabase, keys ...ProfessorPkey) (rows []*ProfessorRow, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, err
-	}
-	rows = make([]*ProfessorRow, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &ProfessorRow{}
-		return rows[i].receive()
-	}, `
-		WITH __key AS (
-			SELECT ROW_NUMBER() over () __keyindex,
-				id
-			FROM json_populate_recordset(null::"wise"."professor", $1)
-		)
-		SELECT id, family_name, given_name, birth_date, hired_date
-		FROM __key JOIN "wise"."professor" AS __table USING (id)
-		ORDER BY __keyindex
-  `, string(b)); err != nil {
-		return nil, err
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].ProfessorPkey() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
-	}
-	return rows, nil
-}
-
-// SaveByProfessorPkey upserts the given rows for table "professor" checking uniqueness by contstraint "professor_pkey"
-func SaveByProfessorPkey(ctx context.Context, db PGMGDatabase, rows ...*ProfessorRow) ([]*ProfessorRow, error) {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return rows, err
-	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() }, `
-		WITH __values AS (
-			SELECT
-				COALESCE(__input.id, nextval('wise.professor_id_seq'::regclass)) id,
-			  __input.family_name,
-			  __input.given_name,
-			  __input.birth_date,
-			  __input.hired_date
-			FROM json_populate_recordset(null::"wise"."professor", $1) __input
-		)
-		INSERT INTO "wise"."professor" SELECT * FROM __values
-		ON CONFLICT (id) DO UPDATE
-			SET (id, family_name, given_name, birth_date, hired_date) = (
-				SELECT id, family_name, given_name, birth_date, hired_date FROM __values
-			)
-		RETURNING id, family_name, given_name, birth_date, hired_date
-	`, string(b))
-	return rows, err
-}
-
-// DeleteByProfessorPkey deletes matching rows by ProfessorPkey keys from table "professor"
-func DeleteByProfessorPkey(ctx context.Context, db PGMGDatabase, keys ...ProfessorPkey) (int64, error) {
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return 0, err
-	}
-	return db.Exec(ctx, `
-		WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."professor", $1))
-		DELETE FROM "wise"."professor" AS __table
-			USING __key
-			WHERE (__key.id = __table.id)
-			`, string(b))
-}
+var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")

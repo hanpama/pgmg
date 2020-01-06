@@ -16,7 +16,6 @@ func TestExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer tdb.close()
 
 	source := []*example.SemesterRow{
 		example.NewSemesterRow(
@@ -40,7 +39,7 @@ func TestExample(t *testing.T) {
 			example.SemesterRowSeason("fall"),
 		),
 	}
-	if saved, err := example.SaveBySemesterPkey(ctx, tdb, source...); err != nil {
+	if saved, err := example.SaveAndReturnBySemesterPkey(ctx, tdb, source...); err != nil {
 		t.Fatal(err)
 	} else {
 		for i, expected := range []*example.SemesterRow{
@@ -96,7 +95,7 @@ func TestExample(t *testing.T) {
 	}
 	// and update
 	source[2].Season = "summer"
-	if _, err = example.SaveBySemesterPkey(ctx, tdb, source[2]); err != nil {
+	if err = example.SaveBySemesterPkey(ctx, tdb, source[2]); err != nil {
 		t.Fatal(err)
 	}
 
@@ -119,8 +118,23 @@ func TestExample(t *testing.T) {
 	}
 }
 
+func TestSaveReturningError(t *testing.T) {
+	ctx := context.Background()
+	tdb, err := newTestDB(ctx, "user=postgres dbname=pgmg sslmode=disable")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = example.SaveAndReturnByProductPkey(ctx, tdb,
+		&example.ProductRow{Price: 1},
+		&example.ProductRow{},
+	)
+	if err == nil {
+		t.Fatal("Expected to get error by constraint ")
+	}
+}
+
 type testDB struct {
-	b *sql.Tx
+	b *sql.DB
 }
 
 var _ example.PGMGDatabase = (*testDB)(nil)
@@ -140,10 +154,6 @@ func (db *testDB) QueryScan(ctx context.Context, r func(int) []interface{}, sql 
 	return rowsReceived, err
 }
 
-func (db *testDB) close() error {
-	return db.b.Rollback()
-}
-
 func (db *testDB) Exec(ctx context.Context, sql string, args ...interface{}) (int64, error) {
 	res, err := db.b.ExecContext(ctx, sql, args...)
 	if err != nil {
@@ -157,7 +167,5 @@ func newTestDB(ctx context.Context, url string) (*testDB, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	tx, err := db.BeginTx(ctx, nil)
-	return &testDB{tx}, nil
+	return &testDB{db}, nil
 }
