@@ -1,4 +1,4 @@
-package internal
+package main
 
 import (
 	"database/sql"
@@ -30,7 +30,7 @@ type Key struct {
 	Columns []Column `json:"columns"`
 }
 
-func IntrospectSchema(db *sql.Tx, schema string) ([]Table, error) {
+func IntrospectSchema(db *sql.DB, schema string) ([]Table, error) {
 	var (
 		tables []Table
 		b      []byte

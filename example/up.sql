@@ -17,7 +17,9 @@ CREATE TABLE wise.course (
 CREATE TABLE wise.professor (
   id SERIAL PRIMARY KEY,
   family_name TEXT NOT NULL,
-  given_name TEXT NOT NULL
+  given_name TEXT NOT NULL,
+  birth_date TIMESTAMPTZ NOT NULL,
+  hired_date TIMESTAMPTZ
 );
 
 CREATE TABLE wise.lecture (

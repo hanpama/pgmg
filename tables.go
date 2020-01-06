@@ -1,43 +1,49 @@
-package internal
+package main
 
 import (
 	"bytes"
 	"go/format"
 
-	"github.com/hanpama/pgmg/templates"
-
 	"github.com/knq/snaker"
 )
 
-func RenderTableModel(packageName string, t *Table) ([]byte, error) {
-	type templateArgs struct {
-		PackageName string
-		Model       *model
+func RenderTableModel(packageName string, ts []Table) ([]byte, error) {
+	tmplArgs := struct {
+		PackageName  string
+		Dependencies map[string]bool
+		Models       []*model
+	}{
+		packageName,
+		make(map[string]bool),
+		make([]*model, len(ts)),
 	}
+
+	for i, t := range ts {
+		for _, col := range t.Columns {
+			if mod := pgTypeToGoType(col.DataType).Module; mod != "" {
+				tmplArgs.Dependencies[mod] = true
+			}
+		}
+		tmplArgs.Models[i] = &model{t}
+	}
+
 	var buff bytes.Buffer
-	err := templates.Tmpl.ExecuteTemplate(&buff, "table_model", templateArgs{
-		packageName, &model{t},
-	})
+	err := Tmpl.ExecuteTemplate(&buff, "table_model", tmplArgs)
 	if err != nil {
 		return nil, err
 	}
 	return format.Source(buff.Bytes())
 }
 
+type schema struct {
+	Dependencies map[string]bool
+	Models       []*model
+}
+
 type model struct {
-	t *Table
+	t Table
 }
 
-func (m *model) Dependencies() (mods []string) {
-	for _, col := range m.t.Columns {
-		if mod := pgTypeToGoType(col.DataType).Module; mod != "" {
-			mods = append(mods, mod)
-		}
-	}
-	return mods
-}
-
-func (m *model) LowerName() string   { return snaker.ForceLowerCamelIdentifier(m.t.Name) }
 func (m *model) CapitalName() string { return snaker.ForceCamelIdentifier(m.t.Name) }
 func (m *model) SQLName() string     { return m.t.Name }
 func (m *model) Schema() string      { return m.t.Schema }
@@ -69,24 +75,29 @@ func (p *property) LowerName() string {
 	}
 	return name
 }
-func (p *property) SQLName() string  { return p.c.Name }
-func (p *property) BaseType() string { return p.t.Name }
-func (p *property) SelectType() string {
+func (p *property) SQLName() string { return p.c.Name }
+func (p *property) GoBaseType() string {
+	return p.t.Name
+}
+func (p *property) GoSelectType() string {
 	if p.c.IsNullable {
 		return p.t.NullableName
 	}
 	return p.t.Name
 }
-func (p *property) InsertRequired() bool { return !p.c.IsNullable && p.c.Default == "" }
-func (p *property) ShouldApplyReference() bool {
-	return p.c.IsNullable && (p.t.Name != p.t.NullableName)
+func (p *property) CanBeNull() bool { return p.c.IsNullable || p.c.Default != "" }
+func (p *property) GoInsertType() string {
+	if p.c.IsNullable || p.c.Default != "" {
+		return p.t.NullableName
+	}
+	return p.t.Name
 }
-func (p *property) NullableType() string { return p.t.NullableName }
-func (p *property) Default() string      { return p.c.Default }
+func (p *property) Default() string { return p.c.Default }
 
 type key struct{ k *Key }
 
 func (k *key) CapitalName() string { return snaker.ForceCamelIdentifier(k.k.Name) }
+func (k *key) SQLName() string     { return k.k.Name }
 
 func (k *key) Properties() (props []property) {
 	for i := range k.k.Columns {
