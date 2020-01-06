@@ -19,4 +19,4 @@ Tables generation:
 
 ## Example
 
-* https://github.com/hanpama/pgmg/tree/master/example/wise
+* https://github.com/hanpama/pgmg/tree/master/example/schema.go
