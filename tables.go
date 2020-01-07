@@ -92,7 +92,9 @@ func (p *property) GoInsertType() string {
 	}
 	return p.t.Name
 }
-func (p *property) Default() string { return p.c.Default }
+func (p *property) FilterType() string { return p.t.NullableName }
+func (p *property) SQLType() string    { return p.t.PGType }
+func (p *property) Default() string    { return p.c.Default }
 
 type key struct{ k *Key }
 

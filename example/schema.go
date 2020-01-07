@@ -8,11 +8,7 @@ import (
 	"time"
 )
 
-// PGMGDatabase represents PostgresQL database
-type PGMGDatabase interface {
-	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
-	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
-}
+// Entities
 
 // Semester represents a row for table "semester"
 type Semester struct {
@@ -20,6 +16,16 @@ type Semester struct {
 	Year   int32  `json:"year"`
 	Season string `json:"season"`
 }
+
+// Product represents a row for table "product"
+type Product struct {
+	ID      *int32     `json:"id"`
+	Price   float64    `json:"price"`
+	Stocked time.Time  `json:"stocked"`
+	Sold    *time.Time `json:"sold"`
+}
+
+// Inputs
 
 // SemesterID represents column "id" of table "semester"
 type SemesterID *int32
@@ -45,14 +51,6 @@ func NewSemester(
 
 func (r *Semester) receive() []interface{} {
 	return []interface{}{&r.ID, &r.Year, &r.Season}
-}
-
-// Product represents a row for table "product"
-type Product struct {
-	ID      *int32     `json:"id"`
-	Price   float64    `json:"price"`
-	Stocked time.Time  `json:"stocked"`
-	Sold    *time.Time `json:"sold"`
 }
 
 // ProductID represents column "id" of table "product"
@@ -85,6 +83,8 @@ func NewProduct(
 func (r *Product) receive() []interface{} {
 	return []interface{}{&r.ID, &r.Price, &r.Stocked, &r.Sold}
 }
+
+// Key actions
 
 // SemesterPkey represents key defined by UNIQUE constraint "semester_pkey" for table "semester"
 type SemesterPkey struct {
@@ -151,38 +151,15 @@ var SQLSaveBySemesterPkey = `
 
 // SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
 func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) error {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return err
-	}
-	affected, err := db.Exec(ctx, SQLSaveBySemesterPkey, string(b))
-	if err != nil {
-		return err
-	}
-	if affected != int64(len(rows)) {
-		return ErrUnexpectedRowNumberAffected
-	}
-	return nil
+	return execJSONSave(ctx, db, SQLSaveBySemesterPkey, rows, len(rows))
 }
+
+var SQLSaveAndReturnBySemesterPkey = SQLSaveBySemesterPkey + " RETURNING id, year, season"
 
 // SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return rows, err
-	}
-	affected, err := db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() },
-		SQLSaveBySemesterPkey+" RETURNING id, year, season",
-		string(b),
-	)
-	if err != nil {
-		return rows, err
-	}
-	if affected != len(rows) {
-		return rows, ErrUnexpectedRowNumberAffected
-	}
-	return rows, nil
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnBySemesterPkey, rows, len(rows))
 }
 
 var SQLDeleteBySemesterPkey = `
@@ -210,9 +187,7 @@ type SemesterYearSeasonKey struct {
 func (r *Semester) SemesterYearSeasonKey() SemesterYearSeasonKey {
 	k := SemesterYearSeasonKey{}
 	k.Year = r.Year
-
 	k.Season = r.Season
-
 	return k
 }
 
@@ -268,38 +243,15 @@ var SQLSaveBySemesterYearSeasonKey = `
 
 // SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
 func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) error {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return err
-	}
-	affected, err := db.Exec(ctx, SQLSaveBySemesterYearSeasonKey, string(b))
-	if err != nil {
-		return err
-	}
-	if affected != int64(len(rows)) {
-		return ErrUnexpectedRowNumberAffected
-	}
-	return nil
+	return execJSONSave(ctx, db, SQLSaveBySemesterYearSeasonKey, rows, len(rows))
 }
+
+var SQLSaveAndReturnBySemesterYearSeasonKey = SQLSaveBySemesterYearSeasonKey + " RETURNING id, year, season"
 
 // SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return rows, err
-	}
-	affected, err := db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() },
-		SQLSaveBySemesterYearSeasonKey+" RETURNING id, year, season",
-		string(b),
-	)
-	if err != nil {
-		return rows, err
-	}
-	if affected != len(rows) {
-		return rows, ErrUnexpectedRowNumberAffected
-	}
-	return rows, nil
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnBySemesterYearSeasonKey, rows, len(rows))
 }
 
 var SQLDeleteBySemesterYearSeasonKey = `
@@ -385,38 +337,15 @@ var SQLSaveByProductPkey = `
 
 // SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
 func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) error {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return err
-	}
-	affected, err := db.Exec(ctx, SQLSaveByProductPkey, string(b))
-	if err != nil {
-		return err
-	}
-	if affected != int64(len(rows)) {
-		return ErrUnexpectedRowNumberAffected
-	}
-	return nil
+	return execJSONSave(ctx, db, SQLSaveByProductPkey, rows, len(rows))
 }
+
+var SQLSaveAndReturnByProductPkey = SQLSaveByProductPkey + " RETURNING id, price, stocked, sold"
 
 // SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) ([]*Product, error) {
-	b, err := json.Marshal(rows)
-	if err != nil {
-		return rows, err
-	}
-	affected, err := db.QueryScan(ctx, func(i int) []interface{} { return rows[i].receive() },
-		SQLSaveByProductPkey+" RETURNING id, price, stocked, sold",
-		string(b),
-	)
-	if err != nil {
-		return rows, err
-	}
-	if affected != len(rows) {
-		return rows, ErrUnexpectedRowNumberAffected
-	}
-	return rows, nil
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnByProductPkey, rows, len(rows))
 }
 
 var SQLDeleteByProductPkey = `
@@ -435,4 +364,85 @@ func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPk
 	return db.Exec(ctx, SQLDeleteByProductPkey, string(b))
 }
 
+// Filters
+
+// SemesterCondition is used for quering table "semester"
+type SemesterCondition struct {
+	ID     *int32  `json:"id"`
+	Year   *int32  `json:"year"`
+	Season *string `json:"season"`
+}
+
+func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (count int, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return 0, err
+	}
+	_, err = db.QueryScan(ctx, func(int) []interface{} { return []interface{}{&count} }, `
+		SELECT count(*) FROM "wise"."semester" AS __t
+		WHERE TRUE
+			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS integer) = __t."id")
+			AND (($1::json->>'year' IS NULL) OR CAST($1::json->>'year' AS integer) = __t."year")
+			AND (($1::json->>'season' IS NULL) OR CAST($1::json->>'season' AS text) = __t."season")
+	`, arg1)
+	return count, err
+}
+
+// ProductCondition is used for quering table "product"
+type ProductCondition struct {
+	ID      *int32     `json:"id"`
+	Price   *float64   `json:"price"`
+	Stocked *time.Time `json:"stocked"`
+	Sold    *time.Time `json:"sold"`
+}
+
+func CountProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (count int, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return 0, err
+	}
+	_, err = db.QueryScan(ctx, func(int) []interface{} { return []interface{}{&count} }, `
+		SELECT count(*) FROM "wise"."product" AS __t
+		WHERE TRUE
+			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS integer) = __t."id")
+			AND (($1::json->>'price' IS NULL) OR CAST($1::json->>'price' AS numeric) = __t."price")
+			AND (($1::json->>'stocked' IS NULL) OR CAST($1::json->>'stocked' AS timestamp with time zone) = __t."stocked")
+			AND (($1::json->>'sold' IS NULL) OR CAST($1::json->>'sold' AS timestamp with time zone) = __t."sold")
+	`, arg1)
+	return count, err
+}
+
 var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
+var ErrInvalidConditions = fmt.Errorf("invalid conditions")
+
+func execJSONSave(ctx context.Context, db PGMGDatabase, sql string, rows interface{}, ern int) (err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(rows); err != nil {
+		return err
+	}
+	if affected, err := db.Exec(ctx, sql, string(arg1)); err != nil {
+		return err
+	} else if affected != int64(ern) {
+		return ErrUnexpectedRowNumberAffected
+	}
+	return nil
+}
+
+func execJSONSaveAndReturn(ctx context.Context, db PGMGDatabase, receive func(int) []interface{}, sql string, rows interface{}, ern int) (err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(rows); err != nil {
+		return err
+	}
+	if affected, err := db.QueryScan(ctx, receive, sql, string(arg1)); err != nil {
+		return err
+	} else if affected != ern {
+		return ErrUnexpectedRowNumberAffected
+	}
+	return nil
+}
+
+// PGMGDatabase represents PostgresQL database
+type PGMGDatabase interface {
+	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
+	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
+}

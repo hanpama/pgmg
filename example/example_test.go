@@ -133,6 +133,21 @@ func TestExample(t *testing.T) {
 			}
 		}
 	}
+
+	var count int
+	if count, err = example.CountSemesterRows(ctx, tdb, example.SemesterCondition{}); err != nil {
+		t.Fatal(err)
+	} else if count != 2 {
+		t.Fatalf("Unexpected row count %d", count)
+	}
+
+	if count, err = example.CountSemesterRows(ctx, tdb, example.SemesterCondition{
+		Season: &source[3].Season,
+	}); err != nil {
+		t.Fatal(err)
+	} else if count != 1 {
+		t.Fatalf("Unexpected row count %d", count)
+	}
 }
 
 func TestSaveReturningError(t *testing.T) {
@@ -148,6 +163,7 @@ func TestSaveReturningError(t *testing.T) {
 	if err == nil {
 		t.Fatal("Expected to get error by constraint ")
 	}
+
 }
 
 type testDB struct {
