@@ -25,32 +25,32 @@ type PGMGDatabase interface {
 }
 
 {{ range $i, $m := .Models }}
-// {{$m.CapitalName}}Row represents a row for table "{{$m.SQLName}}"
-type {{$m.CapitalName}}Row struct {
+// {{$m.CapitalName}} represents a row for table "{{$m.SQLName}}"
+type {{$m.CapitalName}} struct {
 	{{- range $i, $p := $m.Properties}}
 	{{$p.CapitalName}} {{$p.GoInsertType}} ` + "`json:" + `"{{$p.SQLName}}"` + "`" + `
 	{{- end}}
 }
 
 {{ range $i, $p := $m.Properties }}
-// {{$m.CapitalName}}Row{{$p.CapitalName}} represents column "{{$p.SQLName}}" of table "{{$m.SQLName}}"
-type {{$m.CapitalName}}Row{{$p.CapitalName}} {{$p.GoInsertType}}
+// {{$m.CapitalName}}{{$p.CapitalName}} represents column "{{$p.SQLName}}" of table "{{$m.SQLName}}"
+type {{$m.CapitalName}}{{$p.CapitalName}} {{$p.GoInsertType}}
 {{- end }}
 
-// New{{$m.CapitalName}}Row creates a new row for table "{{$m.SQLName}}" with all column values
-func New{{$m.CapitalName}}Row(
+// New{{$m.CapitalName}} creates a new row for table "{{$m.SQLName}}" with all column values
+func New{{$m.CapitalName}}(
 	{{- range $i, $p := $m.Properties }}
-	{{$p.LowerName}} {{$m.CapitalName}}Row{{$p.CapitalName}},
+	{{$p.LowerName}} {{$m.CapitalName}}{{$p.CapitalName}},
 	{{- end }}
-) *{{$m.CapitalName}}Row {
-	return &{{$m.CapitalName}}Row{
+) *{{$m.CapitalName}} {
+	return &{{$m.CapitalName}}{
 		{{- range $i, $p := $m.Properties }}
 		({{$p.GoInsertType}})({{$p.LowerName}}),
 		{{- end }}
 	}
 }
 
-func (r *{{$m.CapitalName}}Row) receive() []interface{} {
+func (r *{{$m.CapitalName}}) receive() []interface{} {
 	return []interface{}{
 		{{- range $i, $p := $m.Properties -}}
 		{{if $i}}, {{end}}&r.{{$p.CapitalName}}
@@ -67,7 +67,7 @@ type {{$k.CapitalName}} struct {
 	{{- end }}
 }
 
-func (r *{{$m.CapitalName}}Row) {{$k.CapitalName}}() {{$k.CapitalName}} {
+func (r *{{$m.CapitalName}}) {{$k.CapitalName}}() {{$k.CapitalName}} {
 	k := {{$k.CapitalName}}{}
 	{{- range $h, $p := $k.Properties }}
 	{{- if $p.Default}}
@@ -93,14 +93,14 @@ var SQLGetBy{{$k.CapitalName}} = ` + "`" + `
 ` + "`" + `
 
 // GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}Row, err error) {
+func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
 	}
-	rows = make([]*{{$m.CapitalName}}Row, len(keys))
+	rows = make([]*{{$m.CapitalName}}, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &{{$m.CapitalName}}Row{}
+		rows[i] = &{{$m.CapitalName}}{}
 		return rows[i].receive()
 	}, SQLGetBy{{$k.CapitalName}}, string(b)); err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ var SQLSaveBy{{$k.CapitalName}} = ` + "`" + `
 ` + "`" + `
 
 // SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
-func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}Row) error {
+func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) error {
 	b, err := json.Marshal(rows);
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$
 
 // SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}Row) ([]*{{$m.CapitalName}}Row, error) {
+func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
 	b, err := json.Marshal(rows);
 	if err != nil {
 		return rows, err

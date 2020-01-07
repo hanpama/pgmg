@@ -14,67 +14,67 @@ type PGMGDatabase interface {
 	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
 
-// SemesterRow represents a row for table "semester"
-type SemesterRow struct {
+// Semester represents a row for table "semester"
+type Semester struct {
 	ID     *int32 `json:"id"`
 	Year   int32  `json:"year"`
 	Season string `json:"season"`
 }
 
-// SemesterRowID represents column "id" of table "semester"
-type SemesterRowID *int32
+// SemesterID represents column "id" of table "semester"
+type SemesterID *int32
 
-// SemesterRowYear represents column "year" of table "semester"
-type SemesterRowYear int32
+// SemesterYear represents column "year" of table "semester"
+type SemesterYear int32
 
-// SemesterRowSeason represents column "season" of table "semester"
-type SemesterRowSeason string
+// SemesterSeason represents column "season" of table "semester"
+type SemesterSeason string
 
-// NewSemesterRow creates a new row for table "semester" with all column values
-func NewSemesterRow(
-	id SemesterRowID,
-	year SemesterRowYear,
-	season SemesterRowSeason,
-) *SemesterRow {
-	return &SemesterRow{
+// NewSemester creates a new row for table "semester" with all column values
+func NewSemester(
+	id SemesterID,
+	year SemesterYear,
+	season SemesterSeason,
+) *Semester {
+	return &Semester{
 		(*int32)(id),
 		(int32)(year),
 		(string)(season),
 	}
 }
 
-func (r *SemesterRow) receive() []interface{} {
+func (r *Semester) receive() []interface{} {
 	return []interface{}{&r.ID, &r.Year, &r.Season}
 }
 
-// ProductRow represents a row for table "product"
-type ProductRow struct {
+// Product represents a row for table "product"
+type Product struct {
 	ID      *int32     `json:"id"`
 	Price   float64    `json:"price"`
 	Stocked time.Time  `json:"stocked"`
 	Sold    *time.Time `json:"sold"`
 }
 
-// ProductRowID represents column "id" of table "product"
-type ProductRowID *int32
+// ProductID represents column "id" of table "product"
+type ProductID *int32
 
-// ProductRowPrice represents column "price" of table "product"
-type ProductRowPrice float64
+// ProductPrice represents column "price" of table "product"
+type ProductPrice float64
 
-// ProductRowStocked represents column "stocked" of table "product"
-type ProductRowStocked time.Time
+// ProductStocked represents column "stocked" of table "product"
+type ProductStocked time.Time
 
-// ProductRowSold represents column "sold" of table "product"
-type ProductRowSold *time.Time
+// ProductSold represents column "sold" of table "product"
+type ProductSold *time.Time
 
-// NewProductRow creates a new row for table "product" with all column values
-func NewProductRow(
-	id ProductRowID,
-	price ProductRowPrice,
-	stocked ProductRowStocked,
-	sold ProductRowSold,
-) *ProductRow {
-	return &ProductRow{
+// NewProduct creates a new row for table "product" with all column values
+func NewProduct(
+	id ProductID,
+	price ProductPrice,
+	stocked ProductStocked,
+	sold ProductSold,
+) *Product {
+	return &Product{
 		(*int32)(id),
 		(float64)(price),
 		(time.Time)(stocked),
@@ -82,7 +82,7 @@ func NewProductRow(
 	}
 }
 
-func (r *ProductRow) receive() []interface{} {
+func (r *Product) receive() []interface{} {
 	return []interface{}{&r.ID, &r.Price, &r.Stocked, &r.Sold}
 }
 
@@ -91,7 +91,7 @@ type SemesterPkey struct {
 	ID int32 `json:"id"`
 }
 
-func (r *SemesterRow) SemesterPkey() SemesterPkey {
+func (r *Semester) SemesterPkey() SemesterPkey {
 	k := SemesterPkey{}
 	if r.ID != nil {
 		k.ID = *r.ID
@@ -111,14 +111,14 @@ var SQLGetBySemesterPkey = `
 `
 
 // GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
-func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows []*SemesterRow, err error) {
+func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows []*Semester, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
 	}
-	rows = make([]*SemesterRow, len(keys))
+	rows = make([]*Semester, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &SemesterRow{}
+		rows[i] = &Semester{}
 		return rows[i].receive()
 	}, SQLGetBySemesterPkey, string(b)); err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ var SQLSaveBySemesterPkey = `
 `
 
 // SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
-func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) error {
+func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) error {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return err
@@ -167,7 +167,7 @@ func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterR
 
 // SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
+func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -207,7 +207,7 @@ type SemesterYearSeasonKey struct {
 	Season string `json:"season"`
 }
 
-func (r *SemesterRow) SemesterYearSeasonKey() SemesterYearSeasonKey {
+func (r *Semester) SemesterYearSeasonKey() SemesterYearSeasonKey {
 	k := SemesterYearSeasonKey{}
 	k.Year = r.Year
 
@@ -228,14 +228,14 @@ var SQLGetBySemesterYearSeasonKey = `
 `
 
 // GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
-func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows []*SemesterRow, err error) {
+func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows []*Semester, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
 	}
-	rows = make([]*SemesterRow, len(keys))
+	rows = make([]*Semester, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &SemesterRow{}
+		rows[i] = &Semester{}
 		return rows[i].receive()
 	}, SQLGetBySemesterYearSeasonKey, string(b)); err != nil {
 		return nil, err
@@ -267,7 +267,7 @@ var SQLSaveBySemesterYearSeasonKey = `
 `
 
 // SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
-func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) error {
+func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) error {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return err
@@ -284,7 +284,7 @@ func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*
 
 // SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*SemesterRow) ([]*SemesterRow, error) {
+func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err
@@ -324,7 +324,7 @@ type ProductPkey struct {
 	ID int32 `json:"id"`
 }
 
-func (r *ProductRow) ProductPkey() ProductPkey {
+func (r *Product) ProductPkey() ProductPkey {
 	k := ProductPkey{}
 	if r.ID != nil {
 		k.ID = *r.ID
@@ -344,14 +344,14 @@ var SQLGetByProductPkey = `
 `
 
 // GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
-func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows []*ProductRow, err error) {
+func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows []*Product, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, err
 	}
-	rows = make([]*ProductRow, len(keys))
+	rows = make([]*Product, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &ProductRow{}
+		rows[i] = &Product{}
 		return rows[i].receive()
 	}, SQLGetByProductPkey, string(b)); err != nil {
 		return nil, err
@@ -384,7 +384,7 @@ var SQLSaveByProductPkey = `
 `
 
 // SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
-func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*ProductRow) error {
+func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) error {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return err
@@ -401,7 +401,7 @@ func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*ProductRow
 
 // SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*ProductRow) ([]*ProductRow, error) {
+func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) ([]*Product, error) {
 	b, err := json.Marshal(rows)
 	if err != nil {
 		return rows, err

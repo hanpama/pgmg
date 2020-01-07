@@ -10,7 +10,6 @@ type typeMapping struct {
 	Name         string `json:"name"`
 	NullableName string `json:"nullableName"`
 	Module       string `json:"module"`
-	DerefPrefix  string `json:"derefPrefix"`
 }
 
 var types = func() map[string]typeMapping {

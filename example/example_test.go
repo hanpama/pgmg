@@ -3,6 +3,7 @@ package example_test
 import (
 	"context"
 	"database/sql"
+	"io/ioutil"
 	"reflect"
 	"testing"
 
@@ -17,36 +18,52 @@ func TestExample(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	source := []*example.SemesterRow{
-		example.NewSemesterRow(
-			example.SemesterRowID(nil),
-			example.SemesterRowYear(2018),
-			example.SemesterRowSeason("spring"),
+	// DROP existing schema if exists
+	var dbmig []byte
+	if dbmig, err = ioutil.ReadFile("down.sql"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tdb.Exec(ctx, string(dbmig)); err != nil {
+		t.Fatal(err)
+	}
+	// Prepare empty tables
+	if dbmig, err = ioutil.ReadFile("up.sql"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err = tdb.Exec(ctx, string(dbmig)); err != nil {
+		t.Fatal(err)
+	}
+
+	source := []*example.Semester{
+		example.NewSemester(
+			example.SemesterID(nil),
+			example.SemesterYear(2018),
+			example.SemesterSeason("spring"),
 		),
-		example.NewSemesterRow(
-			example.SemesterRowID(nil),
-			example.SemesterRowYear(2018),
-			example.SemesterRowSeason("fall"),
+		example.NewSemester(
+			example.SemesterID(nil),
+			example.SemesterYear(2018),
+			example.SemesterSeason("fall"),
 		),
-		example.NewSemesterRow(
-			example.SemesterRowID(nil),
-			example.SemesterRowYear(2019),
-			example.SemesterRowSeason("spring"),
+		example.NewSemester(
+			example.SemesterID(nil),
+			example.SemesterYear(2019),
+			example.SemesterSeason("spring"),
 		),
-		example.NewSemesterRow(
-			example.SemesterRowID(nil),
-			example.SemesterRowYear(2019),
-			example.SemesterRowSeason("fall"),
+		example.NewSemester(
+			example.SemesterID(nil),
+			example.SemesterYear(2019),
+			example.SemesterSeason("fall"),
 		),
 	}
 	if saved, err := example.SaveAndReturnBySemesterPkey(ctx, tdb, source...); err != nil {
 		t.Fatal(err)
 	} else {
-		for i, expected := range []*example.SemesterRow{
-			&example.SemesterRow{ID: source[0].ID, Season: "spring", Year: 2018},
-			&example.SemesterRow{ID: source[1].ID, Season: "fall", Year: 2018},
-			&example.SemesterRow{ID: source[2].ID, Season: "spring", Year: 2019},
-			&example.SemesterRow{ID: source[3].ID, Season: "fall", Year: 2019},
+		for i, expected := range []*example.Semester{
+			&example.Semester{ID: source[0].ID, Season: "spring", Year: 2018},
+			&example.Semester{ID: source[1].ID, Season: "fall", Year: 2018},
+			&example.Semester{ID: source[2].ID, Season: "spring", Year: 2019},
+			&example.Semester{ID: source[3].ID, Season: "fall", Year: 2019},
 		} {
 			if *saved[i] != *expected {
 				t.Fatalf("Expected to equal on index %d, but got %+v", i, saved[i])
@@ -65,11 +82,11 @@ func TestExample(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	} else {
-		for i, expected := range []*example.SemesterRow{
-			&example.SemesterRow{ID: source[0].ID, Season: "spring", Year: 2018},
-			&example.SemesterRow{ID: source[1].ID, Season: "fall", Year: 2018},
+		for i, expected := range []*example.Semester{
+			&example.Semester{ID: source[0].ID, Season: "spring", Year: 2018},
+			&example.Semester{ID: source[1].ID, Season: "fall", Year: 2018},
 			nil, // should be nil
-			&example.SemesterRow{ID: source[1].ID, Season: "fall", Year: 2018},
+			&example.Semester{ID: source[1].ID, Season: "fall", Year: 2018},
 		} {
 			if expected == nil && gots[i] != nil {
 				t.Fatalf("Expected to be nil on index %d but got %+v", i, gots[i])
@@ -107,7 +124,7 @@ func TestExample(t *testing.T) {
 	); err != nil {
 		t.Fatal(err)
 	} else {
-		for i, expected := range []*example.SemesterRow{nil, nil, source[2], source[3]} {
+		for i, expected := range []*example.Semester{nil, nil, source[2], source[3]} {
 			if expected == nil && gots[i] != nil {
 				t.Fatalf("Expected to be nil on index %d but got %+v", i, gots[i])
 			}
@@ -125,8 +142,8 @@ func TestSaveReturningError(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err = example.SaveAndReturnByProductPkey(ctx, tdb,
-		&example.ProductRow{Price: 1},
-		&example.ProductRow{},
+		&example.Product{Price: 1},
+		&example.Product{},
 	)
 	if err == nil {
 		t.Fatal("Expected to get error by constraint ")

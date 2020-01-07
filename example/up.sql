@@ -1,3 +1,5 @@
+DO $$ BEGIN
+
 CREATE SCHEMA wise;
 
 CREATE TABLE wise.semester (
@@ -15,3 +17,4 @@ CREATE TABLE wise.product (
   sold TIMESTAMPTZ
 );
 
+END$$;
