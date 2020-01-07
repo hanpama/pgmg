@@ -8,8 +8,6 @@ import (
 	"time"
 )
 
-// Entities
-
 // Semester represents a row for table "semester"
 type Semester struct {
 	ID     *int32 `json:"id"`
@@ -25,7 +23,113 @@ type Product struct {
 	Sold    *time.Time `json:"sold"`
 }
 
-// Inputs
+// NewSemesterRepository creates a new *SemesterRepository
+func NewSemesterRepository(db PGMGDatabase) *SemesterRepository {
+	return &SemesterRepository{db}
+}
+
+// SemesterRepository gets, saves and deletes rows of table "semester"
+type SemesterRepository struct {
+	db PGMGDatabase
+}
+
+// GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
+func (rep *SemesterRepository) GetBySemesterPkey(ctx context.Context, keys ...SemesterPkey) (rows []*Semester, err error) {
+	return GetBySemesterPkey(ctx, rep.db, keys...)
+}
+
+// SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
+func (rep *SemesterRepository) SaveBySemesterPkey(ctx context.Context, rows ...*Semester) error {
+	return SaveBySemesterPkey(ctx, rep.db, rows...)
+}
+
+// SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
+// It returns the new values and scan them into given row references.
+func (rep *SemesterRepository) SaveAndReturnBySemesterPkey(ctx context.Context, rows ...*Semester) ([]*Semester, error) {
+	return SaveAndReturnBySemesterPkey(ctx, rep.db, rows...)
+}
+
+// DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
+func (rep *SemesterRepository) DeleteBySemesterPkey(ctx context.Context, keys ...SemesterPkey) (int64, error) {
+	return DeleteBySemesterPkey(ctx, rep.db, keys...)
+}
+
+// GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
+func (rep *SemesterRepository) GetBySemesterYearSeasonKey(ctx context.Context, keys ...SemesterYearSeasonKey) (rows []*Semester, err error) {
+	return GetBySemesterYearSeasonKey(ctx, rep.db, keys...)
+}
+
+// SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
+func (rep *SemesterRepository) SaveBySemesterYearSeasonKey(ctx context.Context, rows ...*Semester) error {
+	return SaveBySemesterYearSeasonKey(ctx, rep.db, rows...)
+}
+
+// SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
+// It returns the new values and scan them into given row references.
+func (rep *SemesterRepository) SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, rows ...*Semester) ([]*Semester, error) {
+	return SaveAndReturnBySemesterYearSeasonKey(ctx, rep.db, rows...)
+}
+
+// DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
+func (rep *SemesterRepository) DeleteBySemesterYearSeasonKey(ctx context.Context, keys ...SemesterYearSeasonKey) (int64, error) {
+	return DeleteBySemesterYearSeasonKey(ctx, rep.db, keys...)
+}
+
+// SemesterCondition is used for quering table "semester"
+type SemesterCondition struct {
+	ID     *int32  `json:"id"`
+	Year   *int32  `json:"year"`
+	Season *string `json:"season"`
+}
+
+// CountSemesterRows counts the number of rows which match the condition
+func (rep *SemesterRepository) CountSemesterRows(ctx context.Context, cond SemesterCondition) (int, error) {
+	return CountSemesterRows(ctx, rep.db, cond)
+}
+
+// NewProductRepository creates a new *ProductRepository
+func NewProductRepository(db PGMGDatabase) *ProductRepository {
+	return &ProductRepository{db}
+}
+
+// ProductRepository gets, saves and deletes rows of table "product"
+type ProductRepository struct {
+	db PGMGDatabase
+}
+
+// GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
+func (rep *ProductRepository) GetByProductPkey(ctx context.Context, keys ...ProductPkey) (rows []*Product, err error) {
+	return GetByProductPkey(ctx, rep.db, keys...)
+}
+
+// SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
+func (rep *ProductRepository) SaveByProductPkey(ctx context.Context, rows ...*Product) error {
+	return SaveByProductPkey(ctx, rep.db, rows...)
+}
+
+// SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
+// It returns the new values and scan them into given row references.
+func (rep *ProductRepository) SaveAndReturnByProductPkey(ctx context.Context, rows ...*Product) ([]*Product, error) {
+	return SaveAndReturnByProductPkey(ctx, rep.db, rows...)
+}
+
+// DeleteByProductPkey deletes matching rows by ProductPkey keys from table "product"
+func (rep *ProductRepository) DeleteByProductPkey(ctx context.Context, keys ...ProductPkey) (int64, error) {
+	return DeleteByProductPkey(ctx, rep.db, keys...)
+}
+
+// ProductCondition is used for quering table "product"
+type ProductCondition struct {
+	ID      *int32     `json:"id"`
+	Price   *float64   `json:"price"`
+	Stocked *time.Time `json:"stocked"`
+	Sold    *time.Time `json:"sold"`
+}
+
+// CountProductRows counts the number of rows which match the condition
+func (rep *ProductRepository) CountProductRows(ctx context.Context, cond ProductCondition) (int, error) {
+	return CountProductRows(ctx, rep.db, cond)
+}
 
 // SemesterID represents column "id" of table "semester"
 type SemesterID *int32
@@ -83,8 +187,6 @@ func NewProduct(
 func (r *Product) receive() []interface{} {
 	return []interface{}{&r.ID, &r.Price, &r.Stocked, &r.Sold}
 }
-
-// Key actions
 
 // SemesterPkey represents key defined by UNIQUE constraint "semester_pkey" for table "semester"
 type SemesterPkey struct {
@@ -364,15 +466,7 @@ func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPk
 	return db.Exec(ctx, SQLDeleteByProductPkey, string(b))
 }
 
-// Filters
-
-// SemesterCondition is used for quering table "semester"
-type SemesterCondition struct {
-	ID     *int32  `json:"id"`
-	Year   *int32  `json:"year"`
-	Season *string `json:"season"`
-}
-
+// CountSemesterRows counts the number of rows which match the condition
 func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (count int, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
@@ -388,14 +482,7 @@ func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondit
 	return count, err
 }
 
-// ProductCondition is used for quering table "product"
-type ProductCondition struct {
-	ID      *int32     `json:"id"`
-	Price   *float64   `json:"price"`
-	Stocked *time.Time `json:"stocked"`
-	Sold    *time.Time `json:"sold"`
-}
-
+// CountProductRows counts the number of rows which match the condition
 func CountProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (count int, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
@@ -411,10 +498,6 @@ func CountProductRows(ctx context.Context, db PGMGDatabase, cond ProductConditio
 	`, arg1)
 	return count, err
 }
-
-var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
-var ErrInvalidConditions = fmt.Errorf("invalid conditions")
-
 func execJSONSave(ctx context.Context, db PGMGDatabase, sql string, rows interface{}, ern int) (err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(rows); err != nil {
@@ -446,3 +529,6 @@ type PGMGDatabase interface {
 	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
 	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
+
+var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
+var ErrInvalidConditions = fmt.Errorf("invalid conditions")

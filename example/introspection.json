@@ -54,144 +54,29 @@
     ]
   },
   {
-    "name": "lecture",
+    "name": "product",
     "schema": "wise",
     "columns": [
       {
         "name": "id",
         "data_type": "integer",
         "is_nullable": false,
-        "default": "nextval('wise.lecture_id_seq'::regclass)"
+        "default": "nextval('wise.product_id_seq'::regclass)"
       },
       {
-        "name": "title",
-        "data_type": "text",
+        "name": "price",
+        "data_type": "numeric",
         "is_nullable": false,
         "default": ""
       },
       {
-        "name": "semester_id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "course_id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "tutor_id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": ""
-      }
-    ],
-    "keys": [
-      {
-        "name": "lecture_pkey",
-        "columns": [
-          {
-            "name": "id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": "nextval('wise.lecture_id_seq'::regclass)"
-          }
-        ]
-      },
-      {
-        "name": "lecture_semester_id_course_id_tutor_id_key",
-        "columns": [
-          {
-            "name": "semester_id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": ""
-          },
-          {
-            "name": "course_id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": ""
-          },
-          {
-            "name": "tutor_id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": ""
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "course",
-    "schema": "wise",
-    "columns": [
-      {
-        "name": "id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": "nextval('wise.course_id_seq'::regclass)"
-      },
-      {
-        "name": "title",
-        "data_type": "text",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "credits",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": ""
-      }
-    ],
-    "keys": [
-      {
-        "name": "course_pkey",
-        "columns": [
-          {
-            "name": "id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": "nextval('wise.course_id_seq'::regclass)"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "professor",
-    "schema": "wise",
-    "columns": [
-      {
-        "name": "id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": "nextval('wise.professor_id_seq'::regclass)"
-      },
-      {
-        "name": "family_name",
-        "data_type": "text",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "given_name",
-        "data_type": "text",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "birth_date",
+        "name": "stocked",
         "data_type": "timestamp with time zone",
         "is_nullable": false,
         "default": ""
       },
       {
-        "name": "hired_date",
+        "name": "sold",
         "data_type": "timestamp with time zone",
         "is_nullable": true,
         "default": ""
@@ -199,13 +84,13 @@
     ],
     "keys": [
       {
-        "name": "professor_pkey",
+        "name": "product_pkey",
         "columns": [
           {
             "name": "id",
             "data_type": "integer",
             "is_nullable": false,
-            "default": "nextval('wise.professor_id_seq'::regclass)"
+            "default": "nextval('wise.product_id_seq'::regclass)"
           }
         ]
       }

@@ -85,7 +85,7 @@ func (p *property) GoSelectType() string {
 	}
 	return p.t.Name
 }
-func (p *property) CanBeNull() bool { return p.c.IsNullable || p.c.Default != "" }
+
 func (p *property) GoInsertType() string {
 	if p.c.IsNullable || p.c.Default != "" {
 		return p.t.NullableName

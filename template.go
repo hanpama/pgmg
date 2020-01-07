@@ -18,7 +18,6 @@ import (
 	{{end}}
 )
 
-// Entities
 
 {{ range $i, $m := .Models }}
 // {{$m.CapitalName}} represents a row for table "{{$m.SQLName}}"
@@ -29,7 +28,52 @@ type {{$m.CapitalName}} struct {
 }
 {{ end -}}
 
-// Inputs
+{{ range $i, $m := .Models }}
+
+// New{{$m.CapitalName}}Repository creates a new *{{$m.CapitalName}}Repository
+func New{{$m.CapitalName}}Repository(db PGMGDatabase) *{{$m.CapitalName}}Repository {
+	return &{{$m.CapitalName}}Repository{db}
+}
+
+// {{$m.CapitalName}}Repository gets, saves and deletes rows of table "{{$m.SQLName}}"
+type {{$m.CapitalName}}Repository struct {
+	db PGMGDatabase
+}
+{{ range $j, $k := $m.Keys }}
+// GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
+func (rep *{{$m.CapitalName}}Repository) GetBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}, err error) {
+	return GetBy{{$k.CapitalName}}(ctx, rep.db, keys...)
+}
+
+// SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
+func (rep *{{$m.CapitalName}}Repository) SaveBy{{$k.CapitalName}}(ctx context.Context, rows ...*{{$m.CapitalName}}) error {
+	return SaveBy{{$k.CapitalName}}(ctx, rep.db, rows...)
+}
+
+// SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
+// It returns the new values and scan them into given row references.
+func (rep *{{$m.CapitalName}}Repository) SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
+	return SaveAndReturnBy{{$k.CapitalName}}(ctx, rep.db, rows...)
+}
+
+// DeleteBy{{$k.CapitalName}} deletes matching rows by {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
+func (rep *{{$m.CapitalName}}Repository) DeleteBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.CapitalName}}) (int64, error) {
+	return DeleteBy{{$k.CapitalName}}(ctx, rep.db, keys...)
+}
+{{- end }}
+// {{$m.CapitalName}}Condition is used for quering table "{{$m.SQLName}}"
+type {{$m.CapitalName}}Condition struct {
+	{{- range $i, $p := $m.Properties}}
+	{{$p.CapitalName}} {{$p.FilterType}} ` + "`json:" + `"{{$p.SQLName}}"` + "`" + `
+	{{- end}}
+}
+
+// Count{{$m.CapitalName}}Rows counts the number of rows which match the condition
+func (rep *{{$m.CapitalName}}Repository) Count{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (int, error) {
+	return Count{{$m.CapitalName}}Rows(ctx, rep.db, cond)
+}
+
+{{ end }}
 
 {{ range $i, $m := .Models }}
 {{ range $i, $p := $m.Properties }}
@@ -59,9 +103,10 @@ func (r *{{$m.CapitalName}}) receive() []interface{} {
 }
 {{ end }}
 
-// Key actions
 
-{{ range $i, $m := .Models }}{{ range $j, $k := $m.Keys }}
+{{- range $i, $m := .Models }}
+{{ range $j, $k := $m.Keys }}
+
 // {{$k.CapitalName}} represents key defined by UNIQUE constraint "{{$k.SQLName}}" for table "{{$m.SQLName}}"
 type {{$k.CapitalName}} struct {
 	{{- range $h, $p := $k.Properties }}
@@ -168,16 +213,9 @@ func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{
 
 {{end}}{{ end}}
 
-// Filters
 
 {{ range $i, $m := .Models }}
-// {{$m.CapitalName}}Condition is used for quering table "{{$m.SQLName}}"
-type {{$m.CapitalName}}Condition struct {
-	{{- range $i, $p := $m.Properties}}
-	{{$p.CapitalName}} {{$p.FilterType}} ` + "`json:" + `"{{$p.SQLName}}"` + "`" + `
-	{{- end}}
-}
-
+// Count{{$m.CapitalName}}Rows counts the number of rows which match the condition
 func Count{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (count int, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
@@ -193,9 +231,6 @@ func Count{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m
 	return count, err
 }
 {{ end -}}
-
-var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
-var ErrInvalidConditions = fmt.Errorf("invalid conditions")
 
 func execJSONSave(ctx context.Context, db PGMGDatabase, sql string, rows interface{}, ern int) (err error) {
 	var arg1 []byte
@@ -228,6 +263,9 @@ type PGMGDatabase interface {
 	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
 	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
+
+var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
+var ErrInvalidConditions = fmt.Errorf("invalid conditions")
 
 {{ end -}}
 	`,
