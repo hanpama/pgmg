@@ -68,7 +68,15 @@ type {{$m.CapitalName}}Condition struct {
 	{{- end}}
 }
 
-// Count{{$m.CapitalName}}Rows counts the number of rows which match the condition
+// Find{{$m.CapitalName}}Rows find the rows matching the condition from table "{{$m.SQLName}}"
+func (rep *{{$m.CapitalName}}Repository) Find{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) ([]*{{$m.CapitalName}}, error) {
+	return Find{{$m.CapitalName}}Rows(ctx, rep.db, cond)
+}
+// Delete{{$m.CapitalName}}Rows delete the rows matching the condition from table "{{$m.SQLName}}"
+func (rep *{{$m.CapitalName}}Repository) Delete{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (afftected int64, err error) {
+	return Delete{{$m.CapitalName}}Rows(ctx, rep.db, cond)
+}
+// Count{{$m.CapitalName}}Rows counts the number of rows matching the condition from table "{{$m.SQLName}}"
 func (rep *{{$m.CapitalName}}Repository) Count{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (int, error) {
 	return Count{{$m.CapitalName}}Rows(ctx, rep.db, cond)
 }
@@ -134,8 +142,8 @@ var SQLGetBy{{$k.CapitalName}} = ` + "`" + `
 			{{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}
 		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1)
 	)
-	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}
-	FROM __key JOIN "{{$m.Schema}}"."{{$m.SQLName}}" AS __table USING ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}})
+	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}
+	FROM __key JOIN "{{$m.Schema}}"."{{$m.SQLName}}" AS __table USING ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
 	ORDER BY __keyindex
 ` + "`" + `
 
@@ -168,16 +176,16 @@ var SQLSaveBy{{$k.CapitalName}} = ` + "`" + `
 		SELECT
 			{{ range $h, $p := $m.Properties }}{{if $h }},
 			{{end -}}
-			{{- if $p.Default}}COALESCE(__input.{{$p.SQLName}}, {{$p.Default}}) {{$p.SQLName}}
-			{{- else}}__input.{{$p.SQLName}}
+			{{- if $p.Default}}COALESCE(__input."{{$p.SQLName}}", {{$p.Default}}) "{{$p.SQLName}}"
+			{{- else}}__input."{{$p.SQLName}}"
 			{{- end}}
 		{{- end}}
 		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1) __input
 	)
 	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" SELECT * FROM __values
-	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}) DO UPDATE
-		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}) = (
-			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}} FROM __values
+	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) DO UPDATE
+		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (
+			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
 		)
 ` + "`" + `
 
@@ -198,7 +206,7 @@ var SQLDeleteBy{{$k.CapitalName}} = ` + "`" + `
 WITH __key AS (SELECT * FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __table
 	USING __key
-	WHERE {{ range $h, $p := $k.Properties }}{{if $h }}  AND {{end}}(__key.{{$p.SQLName}} = __table.{{$p.SQLName}})
+	WHERE {{ range $h, $p := $k.Properties }}{{if $h }}  AND {{end}}(__key."{{$p.SQLName}}" = __table."{{$p.SQLName}}")
 	{{ end -}}
 ` + "`" + `
 
@@ -213,9 +221,43 @@ func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{
 
 {{end}}{{ end}}
 
-
 {{ range $i, $m := .Models }}
-// Count{{$m.CapitalName}}Rows counts the number of rows which match the condition
+// Find{{$m.CapitalName}}Rows find the rows matching the condition from table "{{$m.SQLName}}"
+func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (rows []*{{$m.CapitalName}}, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return nil, err
+	}
+	_, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows = append(rows, new({{$m.CapitalName}}))
+		return rows[i].receive()
+	}, ` + "`" + `
+		SELECT {{range $i, $p := $m.Properties }}{{if $i}}, {{end}}__t.{{$p.SQLName}}{{end}}
+		FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
+		WHERE TRUE
+			{{- range $i, $p := $m.Properties }}
+			AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
+			{{- end }}
+	` + "`" + `, arg1)
+	return rows, err
+}
+
+// Delete{{$m.CapitalName}}Rows delete the rows matching the condition from table "{{$m.SQLName}}"
+func Delete{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (afftected int64, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return 0, err
+	}
+	return db.Exec(ctx, ` + "`" + `
+		DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
+		WHERE TRUE
+			{{- range $i, $p := $m.Properties }}
+			AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
+			{{- end }}
+	` + "`" + `, arg1)
+}
+
+// Count{{$m.CapitalName}}Rows counts the number of rows matching the condition from table "{{$m.SQLName}}"
 func Count{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (count int, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {

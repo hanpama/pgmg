@@ -82,7 +82,17 @@ type SemesterCondition struct {
 	Season *string `json:"season"`
 }
 
-// CountSemesterRows counts the number of rows which match the condition
+// FindSemesterRows find the rows matching the condition from table "semester"
+func (rep *SemesterRepository) FindSemesterRows(ctx context.Context, cond SemesterCondition) ([]*Semester, error) {
+	return FindSemesterRows(ctx, rep.db, cond)
+}
+
+// DeleteSemesterRows delete the rows matching the condition from table "semester"
+func (rep *SemesterRepository) DeleteSemesterRows(ctx context.Context, cond SemesterCondition) (afftected int64, err error) {
+	return DeleteSemesterRows(ctx, rep.db, cond)
+}
+
+// CountSemesterRows counts the number of rows matching the condition from table "semester"
 func (rep *SemesterRepository) CountSemesterRows(ctx context.Context, cond SemesterCondition) (int, error) {
 	return CountSemesterRows(ctx, rep.db, cond)
 }
@@ -126,7 +136,17 @@ type ProductCondition struct {
 	Sold    *time.Time `json:"sold"`
 }
 
-// CountProductRows counts the number of rows which match the condition
+// FindProductRows find the rows matching the condition from table "product"
+func (rep *ProductRepository) FindProductRows(ctx context.Context, cond ProductCondition) ([]*Product, error) {
+	return FindProductRows(ctx, rep.db, cond)
+}
+
+// DeleteProductRows delete the rows matching the condition from table "product"
+func (rep *ProductRepository) DeleteProductRows(ctx context.Context, cond ProductCondition) (afftected int64, err error) {
+	return DeleteProductRows(ctx, rep.db, cond)
+}
+
+// CountProductRows counts the number of rows matching the condition from table "product"
 func (rep *ProductRepository) CountProductRows(ctx context.Context, cond ProductCondition) (int, error) {
 	return CountProductRows(ctx, rep.db, cond)
 }
@@ -207,8 +227,8 @@ var SQLGetBySemesterPkey = `
 			id
 		FROM json_populate_recordset(null::"wise"."semester", $1)
 	)
-	SELECT id, year, season
-	FROM __key JOIN "wise"."semester" AS __table USING (id)
+	SELECT "id", "year", "season"
+	FROM __key JOIN "wise"."semester" AS __table USING ("id")
 	ORDER BY __keyindex
 `
 
@@ -239,15 +259,15 @@ func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPke
 var SQLSaveBySemesterPkey = `
 	WITH __values AS (
 		SELECT
-			COALESCE(__input.id, nextval('wise.semester_id_seq'::regclass)) id,
-			__input.year,
-			__input.season
+			COALESCE(__input."id", nextval('wise.semester_id_seq'::regclass)) "id",
+			__input."year",
+			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
 	INSERT INTO "wise"."semester" SELECT * FROM __values
-	ON CONFLICT (id) DO UPDATE
-		SET (id, year, season) = (
-			SELECT id, year, season FROM __values
+	ON CONFLICT ("id") DO UPDATE
+		SET ("id", "year", "season") = (
+			SELECT "id", "year", "season" FROM __values
 		)
 `
 
@@ -268,7 +288,7 @@ var SQLDeleteBySemesterPkey = `
 WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
 DELETE FROM "wise"."semester" AS __table
 	USING __key
-	WHERE (__key.id = __table.id)
+	WHERE (__key."id" = __table."id")
 	`
 
 // DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
@@ -299,8 +319,8 @@ var SQLGetBySemesterYearSeasonKey = `
 			year, season
 		FROM json_populate_recordset(null::"wise"."semester", $1)
 	)
-	SELECT id, year, season
-	FROM __key JOIN "wise"."semester" AS __table USING (year, season)
+	SELECT "id", "year", "season"
+	FROM __key JOIN "wise"."semester" AS __table USING ("year", "season")
 	ORDER BY __keyindex
 `
 
@@ -331,15 +351,15 @@ func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...Se
 var SQLSaveBySemesterYearSeasonKey = `
 	WITH __values AS (
 		SELECT
-			COALESCE(__input.id, nextval('wise.semester_id_seq'::regclass)) id,
-			__input.year,
-			__input.season
+			COALESCE(__input."id", nextval('wise.semester_id_seq'::regclass)) "id",
+			__input."year",
+			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
 	INSERT INTO "wise"."semester" SELECT * FROM __values
-	ON CONFLICT (year, season) DO UPDATE
-		SET (id, year, season) = (
-			SELECT id, year, season FROM __values
+	ON CONFLICT ("year", "season") DO UPDATE
+		SET ("id", "year", "season") = (
+			SELECT "id", "year", "season" FROM __values
 		)
 `
 
@@ -360,8 +380,8 @@ var SQLDeleteBySemesterYearSeasonKey = `
 WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
 DELETE FROM "wise"."semester" AS __table
 	USING __key
-	WHERE (__key.year = __table.year)
-	  AND (__key.season = __table.season)
+	WHERE (__key."year" = __table."year")
+	  AND (__key."season" = __table."season")
 	`
 
 // DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
@@ -392,8 +412,8 @@ var SQLGetByProductPkey = `
 			id
 		FROM json_populate_recordset(null::"wise"."product", $1)
 	)
-	SELECT id, price, stocked, sold
-	FROM __key JOIN "wise"."product" AS __table USING (id)
+	SELECT "id", "price", "stocked", "sold"
+	FROM __key JOIN "wise"."product" AS __table USING ("id")
 	ORDER BY __keyindex
 `
 
@@ -424,16 +444,16 @@ func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey)
 var SQLSaveByProductPkey = `
 	WITH __values AS (
 		SELECT
-			COALESCE(__input.id, nextval('wise.product_id_seq'::regclass)) id,
-			__input.price,
-			__input.stocked,
-			__input.sold
+			COALESCE(__input."id", nextval('wise.product_id_seq'::regclass)) "id",
+			__input."price",
+			__input."stocked",
+			__input."sold"
 		FROM json_populate_recordset(null::"wise"."product", $1) __input
 	)
 	INSERT INTO "wise"."product" SELECT * FROM __values
-	ON CONFLICT (id) DO UPDATE
-		SET (id, price, stocked, sold) = (
-			SELECT id, price, stocked, sold FROM __values
+	ON CONFLICT ("id") DO UPDATE
+		SET ("id", "price", "stocked", "sold") = (
+			SELECT "id", "price", "stocked", "sold" FROM __values
 		)
 `
 
@@ -454,7 +474,7 @@ var SQLDeleteByProductPkey = `
 WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."product", $1))
 DELETE FROM "wise"."product" AS __table
 	USING __key
-	WHERE (__key.id = __table.id)
+	WHERE (__key."id" = __table."id")
 	`
 
 // DeleteByProductPkey deletes matching rows by ProductPkey keys from table "product"
@@ -466,7 +486,42 @@ func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPk
 	return db.Exec(ctx, SQLDeleteByProductPkey, string(b))
 }
 
-// CountSemesterRows counts the number of rows which match the condition
+// FindSemesterRows find the rows matching the condition from table "semester"
+func FindSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (rows []*Semester, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return nil, err
+	}
+	_, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows = append(rows, new(Semester))
+		return rows[i].receive()
+	}, `
+		SELECT __t.id, __t.year, __t.season
+		FROM "wise"."semester" AS __t
+		WHERE TRUE
+			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS integer) = __t."id")
+			AND (($1::json->>'year' IS NULL) OR CAST($1::json->>'year' AS integer) = __t."year")
+			AND (($1::json->>'season' IS NULL) OR CAST($1::json->>'season' AS text) = __t."season")
+	`, arg1)
+	return rows, err
+}
+
+// DeleteSemesterRows delete the rows matching the condition from table "semester"
+func DeleteSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (afftected int64, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return 0, err
+	}
+	return db.Exec(ctx, `
+		DELETE FROM "wise"."semester" AS __t
+		WHERE TRUE
+			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS integer) = __t."id")
+			AND (($1::json->>'year' IS NULL) OR CAST($1::json->>'year' AS integer) = __t."year")
+			AND (($1::json->>'season' IS NULL) OR CAST($1::json->>'season' AS text) = __t."season")
+	`, arg1)
+}
+
+// CountSemesterRows counts the number of rows matching the condition from table "semester"
 func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (count int, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
@@ -482,7 +537,44 @@ func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondit
 	return count, err
 }
 
-// CountProductRows counts the number of rows which match the condition
+// FindProductRows find the rows matching the condition from table "product"
+func FindProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (rows []*Product, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return nil, err
+	}
+	_, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows = append(rows, new(Product))
+		return rows[i].receive()
+	}, `
+		SELECT __t.id, __t.price, __t.stocked, __t.sold
+		FROM "wise"."product" AS __t
+		WHERE TRUE
+			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS integer) = __t."id")
+			AND (($1::json->>'price' IS NULL) OR CAST($1::json->>'price' AS numeric) = __t."price")
+			AND (($1::json->>'stocked' IS NULL) OR CAST($1::json->>'stocked' AS timestamp with time zone) = __t."stocked")
+			AND (($1::json->>'sold' IS NULL) OR CAST($1::json->>'sold' AS timestamp with time zone) = __t."sold")
+	`, arg1)
+	return rows, err
+}
+
+// DeleteProductRows delete the rows matching the condition from table "product"
+func DeleteProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (afftected int64, err error) {
+	var arg1 []byte
+	if arg1, err = json.Marshal(cond); err != nil {
+		return 0, err
+	}
+	return db.Exec(ctx, `
+		DELETE FROM "wise"."product" AS __t
+		WHERE TRUE
+			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS integer) = __t."id")
+			AND (($1::json->>'price' IS NULL) OR CAST($1::json->>'price' AS numeric) = __t."price")
+			AND (($1::json->>'stocked' IS NULL) OR CAST($1::json->>'stocked' AS timestamp with time zone) = __t."stocked")
+			AND (($1::json->>'sold' IS NULL) OR CAST($1::json->>'sold' AS timestamp with time zone) = __t."sold")
+	`, arg1)
+}
+
+// CountProductRows counts the number of rows matching the condition from table "product"
 func CountProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (count int, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {

@@ -97,6 +97,30 @@ func TestExample(t *testing.T) {
 		}
 	}
 
+	// find all
+	if gots, err := example.FindSemesterRows(ctx, tdb, example.SemesterCondition{}); err != nil {
+		t.Fatal(err)
+	} else {
+		for i, expected := range source {
+			if expected != nil && !reflect.DeepEqual(gots[i], expected) {
+				t.Fatalf("Expected to get proper values for index %d but got %+v", i, gots[i])
+			}
+		}
+	}
+
+	// find with filter
+	if gots, err := example.FindSemesterRows(ctx, tdb, example.SemesterCondition{
+		Year: &source[3].Year, // 2019
+	}); err != nil {
+		t.Fatal(err)
+	} else {
+		for i, expected := range []*example.Semester{source[2], source[3]} {
+			if expected != nil && !reflect.DeepEqual(gots[i], expected) {
+				t.Fatalf("Expected to get proper values for index %d but got %+v", i, gots[i])
+			}
+		}
+	}
+
 	// delete ...
 	if deleted, err := example.DeleteBySemesterPkey(ctx, tdb,
 		example.SemesterPkey{ID: *source[0].ID},
@@ -138,7 +162,7 @@ func TestExample(t *testing.T) {
 	if count, err = example.CountSemesterRows(ctx, tdb, example.SemesterCondition{}); err != nil {
 		t.Fatal(err)
 	} else if count != 2 {
-		t.Fatalf("Unexpected row count %d", count)
+		t.Fatalf("Unexpected rows counted %d", count)
 	}
 
 	if count, err = example.CountSemesterRows(ctx, tdb, example.SemesterCondition{
@@ -146,7 +170,14 @@ func TestExample(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	} else if count != 1 {
-		t.Fatalf("Unexpected row count %d", count)
+		t.Fatalf("Unexpected rows counted %d", count)
+	}
+
+	// Delete by condition
+	if affected, err := example.DeleteSemesterRows(ctx, tdb, example.SemesterCondition{}); err != nil {
+		t.Fatal(err)
+	} else if affected != 2 {
+		t.Fatalf("Unexpected rows deleted %d", count)
 	}
 }
 
