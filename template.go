@@ -157,7 +157,7 @@ func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &{{$m.CapitalName}}{}
 		return rows[i].receive()
-	}, SQLGetBy{{$k.CapitalName}}, string(b)); err != nil {
+	}, SQLGetBy{{$k.CapitalName}}, b); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
@@ -216,7 +216,7 @@ func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, SQLDeleteBy{{$k.CapitalName}}, string(b))
+	return db.Exec(ctx, SQLDeleteBy{{$k.CapitalName}}, b)
 }
 
 {{end}}{{ end}}
@@ -279,7 +279,7 @@ func execJSONSave(ctx context.Context, db PGMGDatabase, sql string, rows interfa
 	if arg1, err = json.Marshal(rows); err != nil {
 		return err
 	}
-	if affected, err := db.Exec(ctx, sql, string(arg1)); err != nil {
+	if affected, err := db.Exec(ctx, sql, arg1); err != nil {
 		return err
 	} else if affected != int64(ern) {
 		return ErrUnexpectedRowNumberAffected
@@ -292,7 +292,7 @@ func execJSONSaveAndReturn(ctx context.Context, db PGMGDatabase, receive func(in
 	if arg1, err = json.Marshal(rows); err != nil {
 		return err
 	}
-	if affected, err := db.QueryScan(ctx, receive, sql, string(arg1)); err != nil {
+	if affected, err := db.QueryScan(ctx, receive, sql, arg1); err != nil {
 		return err
 	} else if affected != ern {
 		return ErrUnexpectedRowNumberAffected

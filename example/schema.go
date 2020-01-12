@@ -242,7 +242,7 @@ func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPke
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Semester{}
 		return rows[i].receive()
-	}, SQLGetBySemesterPkey, string(b)); err != nil {
+	}, SQLGetBySemesterPkey, b); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
@@ -297,7 +297,7 @@ func DeleteBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...Semester
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, SQLDeleteBySemesterPkey, string(b))
+	return db.Exec(ctx, SQLDeleteBySemesterPkey, b)
 }
 
 // SemesterYearSeasonKey represents key defined by UNIQUE constraint "semester_year_season_key" for table "semester"
@@ -334,7 +334,7 @@ func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...Se
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Semester{}
 		return rows[i].receive()
-	}, SQLGetBySemesterYearSeasonKey, string(b)); err != nil {
+	}, SQLGetBySemesterYearSeasonKey, b); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
@@ -390,7 +390,7 @@ func DeleteBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ..
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, SQLDeleteBySemesterYearSeasonKey, string(b))
+	return db.Exec(ctx, SQLDeleteBySemesterYearSeasonKey, b)
 }
 
 // ProductPkey represents key defined by UNIQUE constraint "product_pkey" for table "product"
@@ -427,7 +427,7 @@ func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey)
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Product{}
 		return rows[i].receive()
-	}, SQLGetByProductPkey, string(b)); err != nil {
+	}, SQLGetByProductPkey, b); err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(keys); i++ {
@@ -483,7 +483,7 @@ func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPk
 	if err != nil {
 		return 0, err
 	}
-	return db.Exec(ctx, SQLDeleteByProductPkey, string(b))
+	return db.Exec(ctx, SQLDeleteByProductPkey, b)
 }
 
 // FindSemesterRows find the rows matching the condition from table "semester"
@@ -595,7 +595,7 @@ func execJSONSave(ctx context.Context, db PGMGDatabase, sql string, rows interfa
 	if arg1, err = json.Marshal(rows); err != nil {
 		return err
 	}
-	if affected, err := db.Exec(ctx, sql, string(arg1)); err != nil {
+	if affected, err := db.Exec(ctx, sql, arg1); err != nil {
 		return err
 	} else if affected != int64(ern) {
 		return ErrUnexpectedRowNumberAffected
@@ -608,7 +608,7 @@ func execJSONSaveAndReturn(ctx context.Context, db PGMGDatabase, receive func(in
 	if arg1, err = json.Marshal(rows); err != nil {
 		return err
 	}
-	if affected, err := db.QueryScan(ctx, receive, sql, string(arg1)); err != nil {
+	if affected, err := db.QueryScan(ctx, receive, sql, arg1); err != nil {
 		return err
 	} else if affected != ern {
 		return ErrUnexpectedRowNumberAffected
