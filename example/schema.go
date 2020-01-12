@@ -23,7 +23,7 @@ type Product struct {
 	Sold    *time.Time `json:"sold"`
 }
 
-// NewSemesterRepository creates a new *SemesterRepository
+// NewSemesterRepository creates a new SemesterRepository
 func NewSemesterRepository(db PGMGDatabase) *SemesterRepository {
 	return &SemesterRepository{db}
 }
@@ -97,7 +97,7 @@ func (rep *SemesterRepository) CountSemesterRows(ctx context.Context, cond Semes
 	return CountSemesterRows(ctx, rep.db, cond)
 }
 
-// NewProductRepository creates a new *ProductRepository
+// NewProductRepository creates a new ProductRepository
 func NewProductRepository(db PGMGDatabase) *ProductRepository {
 	return &ProductRepository{db}
 }
@@ -264,7 +264,7 @@ var SQLSaveBySemesterPkey = `
 			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
-	INSERT INTO "wise"."semester" SELECT * FROM __values
+	INSERT INTO "wise"."semester" SELECT id, year, season FROM __values
 	ON CONFLICT ("id") DO UPDATE
 		SET ("id", "year", "season") = (
 			SELECT "id", "year", "season" FROM __values
@@ -285,7 +285,7 @@ func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*
 }
 
 var SQLDeleteBySemesterPkey = `
-WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
+WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."semester", $1))
 DELETE FROM "wise"."semester" AS __table
 	USING __key
 	WHERE (__key."id" = __table."id")
@@ -356,7 +356,7 @@ var SQLSaveBySemesterYearSeasonKey = `
 			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
-	INSERT INTO "wise"."semester" SELECT * FROM __values
+	INSERT INTO "wise"."semester" SELECT id, year, season FROM __values
 	ON CONFLICT ("year", "season") DO UPDATE
 		SET ("id", "year", "season") = (
 			SELECT "id", "year", "season" FROM __values
@@ -377,7 +377,7 @@ func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, 
 }
 
 var SQLDeleteBySemesterYearSeasonKey = `
-WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."semester", $1))
+WITH __key AS (SELECT year, season FROM json_populate_recordset(null::"wise"."semester", $1))
 DELETE FROM "wise"."semester" AS __table
 	USING __key
 	WHERE (__key."year" = __table."year")
@@ -450,7 +450,7 @@ var SQLSaveByProductPkey = `
 			__input."sold"
 		FROM json_populate_recordset(null::"wise"."product", $1) __input
 	)
-	INSERT INTO "wise"."product" SELECT * FROM __values
+	INSERT INTO "wise"."product" SELECT id, price, stocked, sold FROM __values
 	ON CONFLICT ("id") DO UPDATE
 		SET ("id", "price", "stocked", "sold") = (
 			SELECT "id", "price", "stocked", "sold" FROM __values
@@ -471,7 +471,7 @@ func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*P
 }
 
 var SQLDeleteByProductPkey = `
-WITH __key AS (SELECT * FROM json_populate_recordset(null::"wise"."product", $1))
+WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."product", $1))
 DELETE FROM "wise"."product" AS __table
 	USING __key
 	WHERE (__key."id" = __table."id")

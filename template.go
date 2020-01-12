@@ -30,7 +30,7 @@ type {{$m.CapitalName}} struct {
 
 {{ range $i, $m := .Models }}
 
-// New{{$m.CapitalName}}Repository creates a new *{{$m.CapitalName}}Repository
+// New{{$m.CapitalName}}Repository creates a new {{$m.CapitalName}}Repository
 func New{{$m.CapitalName}}Repository(db PGMGDatabase) *{{$m.CapitalName}}Repository {
 	return &{{$m.CapitalName}}Repository{db}
 }
@@ -182,7 +182,7 @@ var SQLSaveBy{{$k.CapitalName}} = ` + "`" + `
 		{{- end}}
 		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1) __input
 	)
-	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" SELECT * FROM __values
+	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}} FROM __values
 	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) DO UPDATE
 		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (
 			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
@@ -203,7 +203,7 @@ func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, row
 }
 
 var SQLDeleteBy{{$k.CapitalName}} = ` + "`" + `
-WITH __key AS (SELECT * FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
+WITH __key AS (SELECT {{ range $h, $p := $k.Properties }}{{if $h}}, {{end}}{{$p.SQLName}}{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __table
 	USING __key
 	WHERE {{ range $h, $p := $k.Properties }}{{if $h }}  AND {{end}}(__key."{{$p.SQLName}}" = __table."{{$p.SQLName}}")
