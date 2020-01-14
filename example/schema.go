@@ -173,7 +173,7 @@ func NewSemester(
 	}
 }
 
-func (r *Semester) receive() []interface{} {
+func (r *Semester) ReceiveRow() []interface{} {
 	return []interface{}{&r.ID, &r.Year, &r.Season}
 }
 
@@ -204,7 +204,7 @@ func NewProduct(
 	}
 }
 
-func (r *Product) receive() []interface{} {
+func (r *Product) ReceiveRow() []interface{} {
 	return []interface{}{&r.ID, &r.Price, &r.Stocked, &r.Sold}
 }
 
@@ -241,7 +241,7 @@ func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPke
 	rows = make([]*Semester, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Semester{}
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, SQLGetBySemesterPkey, b); err != nil {
 		return nil, err
 	}
@@ -264,10 +264,11 @@ var SQLSaveBySemesterPkey = `
 			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
-	INSERT INTO "wise"."semester" SELECT id, year, season FROM __values
+	INSERT INTO "wise"."semester" AS _t SELECT id, year, season FROM __values
 	ON CONFLICT ("id") DO UPDATE
 		SET ("id", "year", "season") = (
 			SELECT "id", "year", "season" FROM __values
+			WHERE __values."id" = _t."id"
 		)
 `
 
@@ -281,7 +282,7 @@ var SQLSaveAndReturnBySemesterPkey = SQLSaveBySemesterPkey + " RETURNING id, yea
 // SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
-	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnBySemesterPkey, rows, len(rows))
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBySemesterPkey, rows, len(rows))
 }
 
 var SQLDeleteBySemesterPkey = `
@@ -333,7 +334,7 @@ func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...Se
 	rows = make([]*Semester, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Semester{}
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, SQLGetBySemesterYearSeasonKey, b); err != nil {
 		return nil, err
 	}
@@ -356,10 +357,12 @@ var SQLSaveBySemesterYearSeasonKey = `
 			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
-	INSERT INTO "wise"."semester" SELECT id, year, season FROM __values
+	INSERT INTO "wise"."semester" AS _t SELECT id, year, season FROM __values
 	ON CONFLICT ("year", "season") DO UPDATE
 		SET ("id", "year", "season") = (
 			SELECT "id", "year", "season" FROM __values
+			WHERE __values."year" = _t."year"
+				AND __values."season" = _t."season"
 		)
 `
 
@@ -373,7 +376,7 @@ var SQLSaveAndReturnBySemesterYearSeasonKey = SQLSaveBySemesterYearSeasonKey + "
 // SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
-	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnBySemesterYearSeasonKey, rows, len(rows))
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBySemesterYearSeasonKey, rows, len(rows))
 }
 
 var SQLDeleteBySemesterYearSeasonKey = `
@@ -426,7 +429,7 @@ func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey)
 	rows = make([]*Product, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Product{}
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, SQLGetByProductPkey, b); err != nil {
 		return nil, err
 	}
@@ -450,10 +453,11 @@ var SQLSaveByProductPkey = `
 			__input."sold"
 		FROM json_populate_recordset(null::"wise"."product", $1) __input
 	)
-	INSERT INTO "wise"."product" SELECT id, price, stocked, sold FROM __values
+	INSERT INTO "wise"."product" AS _t SELECT id, price, stocked, sold FROM __values
 	ON CONFLICT ("id") DO UPDATE
 		SET ("id", "price", "stocked", "sold") = (
 			SELECT "id", "price", "stocked", "sold" FROM __values
+			WHERE __values."id" = _t."id"
 		)
 `
 
@@ -467,7 +471,7 @@ var SQLSaveAndReturnByProductPkey = SQLSaveByProductPkey + " RETURNING id, price
 // SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) ([]*Product, error) {
-	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnByProductPkey, rows, len(rows))
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnByProductPkey, rows, len(rows))
 }
 
 var SQLDeleteByProductPkey = `
@@ -494,7 +498,7 @@ func FindSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterConditi
 	}
 	_, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows = append(rows, new(Semester))
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, `
 		SELECT __t.id, __t.year, __t.season
 		FROM "wise"."semester" AS __t
@@ -545,7 +549,7 @@ func FindProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition
 	}
 	_, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows = append(rows, new(Product))
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, `
 		SELECT __t.id, __t.price, __t.stocked, __t.sold
 		FROM "wise"."product" AS __t

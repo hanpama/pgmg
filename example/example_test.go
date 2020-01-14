@@ -136,7 +136,7 @@ func TestExample(t *testing.T) {
 	}
 	// and update
 	source[2].Season = "summer"
-	if err = example.SaveBySemesterPkey(ctx, tdb, source[2]); err != nil {
+	if err = example.SaveBySemesterPkey(ctx, tdb, source[2], source[3]); err != nil {
 		t.Fatal(err)
 	}
 

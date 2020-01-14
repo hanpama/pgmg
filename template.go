@@ -102,7 +102,7 @@ func New{{$m.CapitalName}}(
 	}
 }
 
-func (r *{{$m.CapitalName}}) receive() []interface{} {
+func (r *{{$m.CapitalName}}) ReceiveRow() []interface{} {
 	return []interface{}{
 		{{- range $i, $p := $m.Properties -}}
 		{{if $i}}, {{end}}&r.{{$p.CapitalName}}
@@ -156,7 +156,7 @@ func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.
 	rows = make([]*{{$m.CapitalName}}, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &{{$m.CapitalName}}{}
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, SQLGetBy{{$k.CapitalName}}, b); err != nil {
 		return nil, err
 	}
@@ -182,10 +182,12 @@ var SQLSaveBy{{$k.CapitalName}} = ` + "`" + `
 		{{- end}}
 		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1) __input
 	)
-	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}} FROM __values
+	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" AS _t SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}} FROM __values
 	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) DO UPDATE
 		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (
 			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
+			WHERE {{ range $h, $p := $k.Properties }}{{if $h }}
+				AND {{end}}__values."{{$p.SQLName}}" = _t."{{$p.SQLName}}"{{end}}
 		)
 ` + "`" + `
 
@@ -199,7 +201,7 @@ var SQLSaveAndReturnBy{{$k.CapitalName}} = SQLSaveBy{{$k.CapitalName}} + " RETUR
 // SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
-	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].receive() }, SQLSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
+	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
 }
 
 var SQLDeleteBy{{$k.CapitalName}} = ` + "`" + `
@@ -230,7 +232,7 @@ func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.
 	}
 	_, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows = append(rows, new({{$m.CapitalName}}))
-		return rows[i].receive()
+		return rows[i].ReceiveRow()
 	}, ` + "`" + `
 		SELECT {{range $i, $p := $m.Properties }}{{if $i}}, {{end}}__t.{{$p.SQLName}}{{end}}
 		FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
