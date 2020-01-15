@@ -208,6 +208,7 @@ func (db *testDB) QueryScan(ctx context.Context, r func(int) []interface{}, sql 
 	if err != nil {
 		return rowsReceived, err
 	}
+	defer rows.Close()
 	for rows.Next() {
 		err = rows.Scan(r(rowsReceived)...)
 		if err != nil {
