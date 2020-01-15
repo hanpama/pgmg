@@ -264,7 +264,8 @@ var SQLSaveBySemesterPkey = `
 			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
-	INSERT INTO "wise"."semester" AS _t SELECT id, year, season FROM __values
+	INSERT INTO "wise"."semester" AS _t ("id", "year", "season")
+	SELECT "id", "year", "season" FROM __values
 	ON CONFLICT ("id") DO UPDATE
 		SET ("id", "year", "season") = (
 			SELECT "id", "year", "season" FROM __values
@@ -357,7 +358,8 @@ var SQLSaveBySemesterYearSeasonKey = `
 			__input."season"
 		FROM json_populate_recordset(null::"wise"."semester", $1) __input
 	)
-	INSERT INTO "wise"."semester" AS _t SELECT id, year, season FROM __values
+	INSERT INTO "wise"."semester" AS _t ("id", "year", "season")
+	SELECT "id", "year", "season" FROM __values
 	ON CONFLICT ("year", "season") DO UPDATE
 		SET ("id", "year", "season") = (
 			SELECT "id", "year", "season" FROM __values
@@ -453,7 +455,8 @@ var SQLSaveByProductPkey = `
 			__input."sold"
 		FROM json_populate_recordset(null::"wise"."product", $1) __input
 	)
-	INSERT INTO "wise"."product" AS _t SELECT id, price, stocked, sold FROM __values
+	INSERT INTO "wise"."product" AS _t ("id", "price", "stocked", "sold")
+	SELECT "id", "price", "stocked", "sold" FROM __values
 	ON CONFLICT ("id") DO UPDATE
 		SET ("id", "price", "stocked", "sold") = (
 			SELECT "id", "price", "stocked", "sold" FROM __values

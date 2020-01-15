@@ -19,7 +19,7 @@ example:
 
 ## What is generated
 
-* Structs represents rows for the tables
+* Structs that represents rows for the tables
 * Multi-row `Get`, `Save` and `Delete` methods by primary key and unique keys
 * `Count`, `Find` and `Delete` methods per table with its EQ filter
 * Row constructors for input type safety

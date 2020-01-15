@@ -182,7 +182,8 @@ var SQLSaveBy{{$k.CapitalName}} = ` + "`" + `
 		{{- end}}
 		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1) __input
 	)
-	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" AS _t SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}} FROM __values
+	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" AS _t ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
+	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
 	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) DO UPDATE
 		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (
 			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
