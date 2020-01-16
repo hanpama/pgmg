@@ -17,12 +17,12 @@ example:
 		-out example/schema.go
 ```
 
-## What is generated
+## PGMG Generates
 
-* Structs that represents rows for the tables
-* Multi-row `Get`, `Save` and `Delete` methods by primary key and unique keys
+* structs that represents rows for the tables
+* multi-row `Get`, `Save` and `Delete` methods by primary key and unique keys
 * `Count`, `Find` and `Delete` methods per table with its EQ filter
-* Row constructors for input type safety
+* and row constructors for input type safety
 
 
 ### Structs represents rows for the tables
@@ -110,6 +110,9 @@ func (rep *ProductRepository) CountProductRows(ctx context.Context, cond Product
 
 ### Row constructors for input type safety
 
+You can optionally use the row constructors which force you specify all the columns in proper order.
+It can help you statically check the errors that occur while your database schema changes.
+
 ```go
 // ProductID represents column "id" of table "product"
 type ProductID *int32
@@ -154,7 +157,8 @@ type PGMGDatabase interface {
 
 So your database connection should implement `PGMGDatabase` like below.
 
-the `receiver func(int) []interface{}` parameter is a function returning pointers to scan data into.
+The `receiver func(int) []interface{}` parameter is a function returning pointers for `rows.Scan()`-like functions
+to scan data into.
 
 ```go
 type testDB struct {
