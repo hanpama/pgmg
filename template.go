@@ -151,14 +151,14 @@ var SQLGetBy{{$k.CapitalName}} = ` + "`" + `
 func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
 	rows = make([]*{{$m.CapitalName}}, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &{{$m.CapitalName}}{}
 		return rows[i].ReceiveRow()
 	}, SQLGetBy{{$k.CapitalName}}, b); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
 	for i := 0; i < len(keys); i++ {
 		if rows[i] == nil {
@@ -193,8 +193,11 @@ var SQLSaveBy{{$k.CapitalName}} = ` + "`" + `
 ` + "`" + `
 
 // SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
-func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) error {
-	return execJSONSave(ctx, db, SQLSaveBy{{$k.CapitalName}}, rows, len(rows))
+func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) (err error) {
+	if err = execJSONSave(ctx, db, SQLSaveBy{{$k.CapitalName}}, rows, len(rows)); err != nil {
+		return fmt.Errorf("%w(SaveBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	return nil
 }
 
 var SQLSaveAndReturnBy{{$k.CapitalName}} = SQLSaveBy{{$k.CapitalName}} + " RETURNING {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}"
@@ -202,7 +205,11 @@ var SQLSaveAndReturnBy{{$k.CapitalName}} = SQLSaveBy{{$k.CapitalName}} + " RETUR
 // SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
 // It returns the new values and scan them into given row references.
 func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
-	return rows, execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
+	err := execJSONSaveAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
+	if err != nil {
+		return rows, fmt.Errorf("%w(SaveAndReturnBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	return rows, nil
 }
 
 var SQLDeleteBy{{$k.CapitalName}} = ` + "`" + `
@@ -214,12 +221,15 @@ DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __table
 ` + "`" + `
 
 // DeleteBy{{$k.CapitalName}} deletes matching rows by {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (int64, error) {
+func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (affected int64, err error) {
 	b, err := json.Marshal(keys);
 	if err != nil {
-		return 0, err
+		return affected, fmt.Errorf("%w(DeleteBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
-	return db.Exec(ctx, SQLDeleteBy{{$k.CapitalName}}, b)
+	if affected, err = db.Exec(ctx, SQLDeleteBy{{$k.CapitalName}}, b); err != nil {
+		return affected, fmt.Errorf("%w(DeleteBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	return affected, nil
 }
 
 {{end}}{{ end}}
@@ -309,8 +319,10 @@ type PGMGDatabase interface {
 	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
 
-var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
-var ErrInvalidConditions = fmt.Errorf("invalid conditions")
+var ErrUnexpectedRowNumberAffected = fmt.Errorf("pgmg: unexpected row number affected")
+var ErrInvalidConditions = fmt.Errorf("pgmg: invalid conditions")
+
+var ErrPGMG = fmt.Errorf("pgmg: error")
 
 {{ end -}}
 	`,
