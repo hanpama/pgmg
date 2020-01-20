@@ -23,14 +23,14 @@ func TestExample(t *testing.T) {
 	if dbmig, err = ioutil.ReadFile("down.sql"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = tdb.Exec(ctx, string(dbmig)); err != nil {
+	if _, err = tdb.ExecCountingAffected(ctx, string(dbmig)); err != nil {
 		t.Fatal(err)
 	}
 	// Prepare empty tables
 	if dbmig, err = ioutil.ReadFile("up.sql"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = tdb.Exec(ctx, string(dbmig)); err != nil {
+	if _, err = tdb.ExecCountingAffected(ctx, string(dbmig)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -219,7 +219,7 @@ func (db *testDB) QueryScan(ctx context.Context, r func(int) []interface{}, sql 
 	return rowsReceived, err
 }
 
-func (db *testDB) Exec(ctx context.Context, sql string, args ...interface{}) (int64, error) {
+func (db *testDB) ExecCountingAffected(ctx context.Context, sql string, args ...interface{}) (int64, error) {
 	res, err := db.b.ExecContext(ctx, sql, args...)
 	if err != nil {
 		return 0, err
