@@ -56,6 +56,11 @@ func TestExample(t *testing.T) {
 			example.SemesterSeason("fall"),
 		),
 	}
+
+	if _, err := example.InsertAndReturnSemesterRows(ctx, tdb, source...); err != nil {
+		t.Fatal(err)
+	}
+
 	if saved, err := example.SaveAndReturnBySemesterPkey(ctx, tdb, source...); err != nil {
 		t.Fatal(err)
 	} else {

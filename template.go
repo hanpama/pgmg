@@ -144,7 +144,9 @@ func Insert{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...
 	return nil
 }
 
-var sqlReturning{{$m.CapitalName}}Rows = "RETURNING {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}"
+var sqlReturning{{$m.CapitalName}}Rows = ` + "`" + `
+	RETURNING {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}
+` + "`" + `
 
 var SQLInsertAndReturn{{$m.CapitalName}}Rows = SQLInsert{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
 

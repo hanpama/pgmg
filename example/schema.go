@@ -242,7 +242,9 @@ func InsertSemesterRows(ctx context.Context, db PGMGDatabase, rows ...*Semester)
 	return nil
 }
 
-var sqlReturningSemesterRows = "RETURNING id, year, season"
+var sqlReturningSemesterRows = `
+	RETURNING id, year, season
+`
 
 var SQLInsertAndReturnSemesterRows = SQLInsertSemesterRows + sqlReturningSemesterRows
 
@@ -465,7 +467,9 @@ func InsertProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) (
 	return nil
 }
 
-var sqlReturningProductRows = "RETURNING id, price, stocked, sold"
+var sqlReturningProductRows = `
+	RETURNING id, price, stocked, sold
+`
 
 var SQLInsertAndReturnProductRows = SQLInsertProductRows + sqlReturningProductRows
 
