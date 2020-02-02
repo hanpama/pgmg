@@ -1,6 +1,6 @@
 # PGMG
 
-> This library is in development. The API is not stable and may change.
+> This package is in development. The API is not stable and may change.
 
 PostgreSQL Model Generator
 
