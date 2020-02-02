@@ -27,6 +27,7 @@ type {{$m.CapitalName}} struct {
 	{{- end}}
 }
 
+// {{$m.CapitalName}}Rows represents multiple rows for table "{{$m.SQLName}}"
 type {{$m.CapitalName}}Rows []*{{$m.CapitalName}}
 
 {{ end -}}
@@ -97,7 +98,7 @@ func (rep *PGMGRepository) Count{{$m.CapitalName}}Rows(ctx context.Context, cond
 
 {{ range $i, $m := .Models }}
 {{ range $i, $p := $m.Properties }}
-// {{$m.CapitalName}}{{$p.CapitalName}} represents column "{{$p.SQLName}}" of table "{{$m.SQLName}}"
+// {{$m.CapitalName}}{{$p.CapitalName}} represents value type of column "{{$p.SQLName}}" of table "{{$m.SQLName}}"
 type {{$m.CapitalName}}{{$p.CapitalName}} {{$p.GoInsertType}}
 {{- end }}
 
@@ -126,7 +127,7 @@ func (r *{{$m.CapitalName}}) ReceiveRow() []interface{} {
 
 {{- range $i, $m := .Models }}
 
-var SQLInsert{{$m.CapitalName}}Rows = ` + "`" + `
+var sqlInsert{{$m.CapitalName}}Rows = ` + "`" + `
 	WITH __values AS (
 		SELECT
 			{{ range $h, $p := $m.Properties }}{{if $h }},
@@ -141,7 +142,7 @@ var SQLInsert{{$m.CapitalName}}Rows = ` + "`" + `
 	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values` + "`" + `
 
 func Insert{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) (err error) {
-	if err = execJSON(ctx, db, SQLInsert{{$m.CapitalName}}Rows, rows, len(rows)); err != nil {
+	if err = execJSON(ctx, db, sqlInsert{{$m.CapitalName}}Rows, rows, len(rows)); err != nil {
 		return fmt.Errorf("%w( Insert{{$m.CapitalName}}Rows, %w)", ErrPGMG, err)
 	}
 	return nil
@@ -151,134 +152,16 @@ var sqlReturning{{$m.CapitalName}}Rows = ` + "`" + `
 	RETURNING {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}
 ` + "`" + `
 
-var SQLInsertAndReturn{{$m.CapitalName}}Rows = SQLInsert{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
+var sqlInsertAndReturn{{$m.CapitalName}}Rows = sqlInsert{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
 
 func InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLInsertAndReturn{{$m.CapitalName}}Rows, rows, len(rows))
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlInsertAndReturn{{$m.CapitalName}}Rows, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SQLInsertAndReturn{{$m.CapitalName}}Rows, %w)", ErrPGMG, err)
 	}
 	return rows, nil
 }
 
-{{ range $j, $k := $m.Keys }}
-
-// {{$k.CapitalName}} represents key defined by UNIQUE constraint "{{$k.SQLName}}" for table "{{$m.SQLName}}"
-type {{$k.CapitalName}} struct {
-	{{- range $h, $p := $k.Properties }}
-	{{$p.CapitalName}} {{$p.GoSelectType}} ` + "`json:" + `"{{$p.SQLName}}"` + "`" + `
-	{{- end }}
-}
-
-func (r *{{$m.CapitalName}}) {{$k.CapitalName}}() {{$k.CapitalName}} {
-	k := {{$k.CapitalName}}{}
-	{{- range $h, $p := $k.Properties }}
-	{{- if $p.Default}}
-	if r.{{$p.CapitalName}} != nil {
-		k.{{$p.CapitalName}} = *r.{{$p.CapitalName}}
-	}
-	{{- else}}
-	k.{{$p.CapitalName}} = r.{{$p.CapitalName}}
-	{{- end}}
-	{{- end }}
-	return k
-}
-
-func (rs {{$m.CapitalName}}Rows) {{$k.CapitalName}}Slice() (keys []{{$k.CapitalName}}) {
-	keys = make([]{{$k.CapitalName}}, len(rs))
-	for i, r := range rs {
-		keys[i] = r.{{$k.CapitalName}}()
-	}
-	return keys
-}
-
-var SQLGetBy{{$k.CapitalName}} = ` + "`" + `
-	WITH __key AS (
-		SELECT ROW_NUMBER() over () __keyindex,
-			{{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}
-		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1)
-	)
-	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}
-	FROM __key JOIN "{{$m.Schema}}"."{{$m.SQLName}}" AS __table USING ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
-	ORDER BY __keyindex
-` + "`" + `
-
-// GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows {{$m.CapitalName}}Rows, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
-	}
-	rows = make({{$m.CapitalName}}Rows, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &{{$m.CapitalName}}{}
-		return rows[i].ReceiveRow()
-	}, SQLGetBy{{$k.CapitalName}}, b); err != nil {
-		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].{{$k.CapitalName}}() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
-	}
-	return rows, nil
-}
-
-var SQLSaveBy{{$k.CapitalName}} = SQLInsert{{$m.CapitalName}}Rows + ` + "`" + `
-	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) DO UPDATE
-		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (
-			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
-			WHERE {{ range $h, $p := $k.Properties }}{{if $h }}
-				AND {{end}}__values."{{$p.SQLName}}" = _t."{{$p.SQLName}}"{{end}}
-		)
-` + "`" + `
-
-// SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
-func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) (err error) {
-	if err = execJSON(ctx, db, SQLSaveBy{{$k.CapitalName}}, rows, len(rows)); err != nil {
-		return fmt.Errorf("%w(SaveBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
-	}
-	return nil
-}
-
-var SQLSaveAndReturnBy{{$k.CapitalName}} = SQLSaveBy{{$k.CapitalName}} + sqlReturning{{$m.CapitalName}}Rows
-
-// SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
-// It returns the new values and scan them into given row references.
-func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
-	if err != nil {
-		return rows, fmt.Errorf("%w(SaveAndReturnBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
-	}
-	return rows, nil
-}
-
-var SQLDeleteBy{{$k.CapitalName}} = ` + "`" + `
-WITH __key AS (SELECT {{ range $h, $p := $k.Properties }}{{if $h}}, {{end}}{{$p.SQLName}}{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
-DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __table
-	USING __key
-	WHERE {{ range $h, $p := $k.Properties }}{{if $h }}  AND {{end}}(__key."{{$p.SQLName}}" = __table."{{$p.SQLName}}")
-	{{ end -}}
-` + "`" + `
-
-// DeleteBy{{$k.CapitalName}} deletes matching rows by {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (affected int64, err error) {
-	b, err := json.Marshal(keys);
-	if err != nil {
-		return affected, fmt.Errorf("%w(DeleteBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
-	}
-	if affected, err = db.ExecCountingAffected(ctx, SQLDeleteBy{{$k.CapitalName}}, b); err != nil {
-		return affected, fmt.Errorf("%w(DeleteBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
-	}
-	return affected, nil
-}
-
-{{end}}{{ end}}
-
-{{ range $i, $m := .Models }}
 // Find{{$m.CapitalName}}Rows find the rows matching the condition from table "{{$m.SQLName}}"
 func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (rows {{$m.CapitalName}}Rows, err error) {
 	var arg1 []byte
@@ -329,7 +212,124 @@ func Count{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m
 	` + "`" + `, arg1)
 	return count, err
 }
-{{ end -}}
+
+{{ range $j, $k := $m.Keys }}
+
+// {{$k.CapitalName}} represents the key defined by UNIQUE constraint "{{$k.SQLName}}" for table "{{$m.SQLName}}"
+type {{$k.CapitalName}} struct {
+	{{- range $h, $p := $k.Properties }}
+	{{$p.CapitalName}} {{$p.GoSelectType}} ` + "`json:" + `"{{$p.SQLName}}"` + "`" + `
+	{{- end }}
+}
+
+func (r *{{$m.CapitalName}}) {{$k.CapitalName}}() {{$k.CapitalName}} {
+	k := {{$k.CapitalName}}{}
+	{{- range $h, $p := $k.Properties }}
+	{{- if $p.Default}}
+	if r.{{$p.CapitalName}} != nil {
+		k.{{$p.CapitalName}} = *r.{{$p.CapitalName}}
+	}
+	{{- else}}
+	k.{{$p.CapitalName}} = r.{{$p.CapitalName}}
+	{{- end}}
+	{{- end }}
+	return k
+}
+
+func (rs {{$m.CapitalName}}Rows) {{$k.CapitalName}}Slice() (keys []{{$k.CapitalName}}) {
+	keys = make([]{{$k.CapitalName}}, len(rs))
+	for i, r := range rs {
+		keys[i] = r.{{$k.CapitalName}}()
+	}
+	return keys
+}
+
+var sqlGetBy{{$k.CapitalName}} = ` + "`" + `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			{{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}{{$p.SQLName}}{{end}}
+		FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1)
+	)
+	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}
+	FROM __key JOIN "{{$m.Schema}}"."{{$m.SQLName}}" AS __table USING ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
+	ORDER BY __keyindex
+` + "`" + `
+
+// GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
+func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows {{$m.CapitalName}}Rows, err error) {
+	var b []byte
+	if b, err = json.Marshal(keys); err != nil {
+		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	rows = make({{$m.CapitalName}}Rows, len(keys))
+	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows[i] = &{{$m.CapitalName}}{}
+		return rows[i].ReceiveRow()
+	}, sqlGetBy{{$k.CapitalName}}, b); err != nil {
+		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	for i := 0; i < len(keys); i++ {
+		if rows[i] == nil {
+			break
+		} else if rows[i].{{$k.CapitalName}}() != keys[i] {
+			copy(rows[i+1:], rows[i:])
+			rows[i] = nil
+		}
+	}
+	return rows, nil
+}
+
+var sqlSaveBy{{$k.CapitalName}} = sqlInsert{{$m.CapitalName}}Rows + ` + "`" + `
+	ON CONFLICT ({{ range $h, $p := $k.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) DO UPDATE
+		SET ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (
+			SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values
+			WHERE {{ range $h, $p := $k.Properties }}{{if $h }}
+				AND {{end}}__values."{{$p.SQLName}}" = _t."{{$p.SQLName}}"{{end}}
+		)
+` + "`" + `
+
+// SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
+func SaveBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) (err error) {
+	if err = execJSON(ctx, db, sqlSaveBy{{$k.CapitalName}}, rows, len(rows)); err != nil {
+		return fmt.Errorf("%w(SaveBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	return nil
+}
+
+var sqlSaveAndReturnBy{{$k.CapitalName}} = sqlSaveBy{{$k.CapitalName}} + sqlReturning{{$m.CapitalName}}Rows
+
+// SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
+	if err != nil {
+		return rows, fmt.Errorf("%w(SaveAndReturnBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	return rows, nil
+}
+
+var sqlDeleteBy{{$k.CapitalName}} = ` + "`" + `
+WITH __key AS (SELECT {{ range $h, $p := $k.Properties }}{{if $h}}, {{end}}{{$p.SQLName}}{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
+DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __table
+	USING __key
+	WHERE {{ range $h, $p := $k.Properties }}{{if $h }}  AND {{end}}(__key."{{$p.SQLName}}" = __table."{{$p.SQLName}}")
+	{{ end -}}
+` + "`" + `
+
+// DeleteBy{{$k.CapitalName}} deletes matching rows by {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
+func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (affected int64, err error) {
+	b, err := json.Marshal(keys);
+	if err != nil {
+		return affected, fmt.Errorf("%w(DeleteBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	if affected, err = db.ExecCountingAffected(ctx, sqlDeleteBy{{$k.CapitalName}}, b); err != nil {
+		return affected, fmt.Errorf("%w(DeleteBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
+	}
+	return affected, nil
+}
+
+{{end}}{{ end}}
+
 
 func execJSON(ctx context.Context, db PGMGDatabase, sql string, rows interface{}, ern int) (err error) {
 	var arg1 []byte

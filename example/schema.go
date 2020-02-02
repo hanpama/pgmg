@@ -15,6 +15,7 @@ type Semester struct {
 	Season string `json:"season"`
 }
 
+// SemesterRows represents multiple rows for table "semester"
 type SemesterRows []*Semester
 
 // Product represents a row for table "product"
@@ -25,6 +26,7 @@ type Product struct {
 	Sold    *time.Time `json:"sold"`
 }
 
+// ProductRows represents multiple rows for table "product"
 type ProductRows []*Product
 
 // NewPGMGRepository creates a new PGMGRepository
@@ -161,13 +163,13 @@ func (rep *PGMGRepository) CountProductRows(ctx context.Context, cond ProductCon
 	return CountProductRows(ctx, rep.db, cond)
 }
 
-// SemesterID represents column "id" of table "semester"
+// SemesterID represents value type of column "id" of table "semester"
 type SemesterID *int32
 
-// SemesterYear represents column "year" of table "semester"
+// SemesterYear represents value type of column "year" of table "semester"
 type SemesterYear int32
 
-// SemesterSeason represents column "season" of table "semester"
+// SemesterSeason represents value type of column "season" of table "semester"
 type SemesterSeason string
 
 // NewSemester creates a new row for table "semester" with all column values
@@ -187,16 +189,16 @@ func (r *Semester) ReceiveRow() []interface{} {
 	return []interface{}{&r.ID, &r.Year, &r.Season}
 }
 
-// ProductID represents column "id" of table "product"
+// ProductID represents value type of column "id" of table "product"
 type ProductID *int32
 
-// ProductPrice represents column "price" of table "product"
+// ProductPrice represents value type of column "price" of table "product"
 type ProductPrice float64
 
-// ProductStocked represents column "stocked" of table "product"
+// ProductStocked represents value type of column "stocked" of table "product"
 type ProductStocked time.Time
 
-// ProductSold represents column "sold" of table "product"
+// ProductSold represents value type of column "sold" of table "product"
 type ProductSold *time.Time
 
 // NewProduct creates a new row for table "product" with all column values
@@ -218,7 +220,7 @@ func (r *Product) ReceiveRow() []interface{} {
 	return []interface{}{&r.ID, &r.Price, &r.Stocked, &r.Sold}
 }
 
-var SQLInsertSemesterRows = `
+var sqlInsertSemesterRows = `
 	WITH __values AS (
 		SELECT
 			COALESCE(__input."id", nextval('wise.semester_id_seq'::regclass)) "id",
@@ -230,7 +232,7 @@ var SQLInsertSemesterRows = `
 	SELECT "id", "year", "season" FROM __values`
 
 func InsertSemesterRows(ctx context.Context, db PGMGDatabase, rows ...*Semester) (err error) {
-	if err = execJSON(ctx, db, SQLInsertSemesterRows, rows, len(rows)); err != nil {
+	if err = execJSON(ctx, db, sqlInsertSemesterRows, rows, len(rows)); err != nil {
 		return fmt.Errorf("%w( InsertSemesterRows, %w)", ErrPGMG, err)
 	}
 	return nil
@@ -240,358 +242,14 @@ var sqlReturningSemesterRows = `
 	RETURNING id, year, season
 `
 
-var SQLInsertAndReturnSemesterRows = SQLInsertSemesterRows + sqlReturningSemesterRows
+var sqlInsertAndReturnSemesterRows = sqlInsertSemesterRows + sqlReturningSemesterRows
 
 func InsertAndReturnSemesterRows(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLInsertAndReturnSemesterRows, rows, len(rows))
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlInsertAndReturnSemesterRows, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SQLInsertAndReturnSemesterRows, %w)", ErrPGMG, err)
 	}
 	return rows, nil
-}
-
-// SemesterPkey represents key defined by UNIQUE constraint "semester_pkey" for table "semester"
-type SemesterPkey struct {
-	ID int32 `json:"id"`
-}
-
-func (r *Semester) SemesterPkey() SemesterPkey {
-	k := SemesterPkey{}
-	if r.ID != nil {
-		k.ID = *r.ID
-	}
-	return k
-}
-
-func (rs SemesterRows) SemesterPkeySlice() (keys []SemesterPkey) {
-	keys = make([]SemesterPkey, len(rs))
-	for i, r := range rs {
-		keys[i] = r.SemesterPkey()
-	}
-	return keys
-}
-
-var SQLGetBySemesterPkey = `
-	WITH __key AS (
-		SELECT ROW_NUMBER() over () __keyindex,
-			id
-		FROM json_populate_recordset(null::"wise"."semester", $1)
-	)
-	SELECT "id", "year", "season"
-	FROM __key JOIN "wise"."semester" AS __table USING ("id")
-	ORDER BY __keyindex
-`
-
-// GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
-func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows SemesterRows, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, fmt.Errorf("%w(GetBySemesterPkey, %w)", ErrPGMG, err)
-	}
-	rows = make(SemesterRows, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &Semester{}
-		return rows[i].ReceiveRow()
-	}, SQLGetBySemesterPkey, b); err != nil {
-		return nil, fmt.Errorf("%w(GetBySemesterPkey, %w)", ErrPGMG, err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].SemesterPkey() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
-	}
-	return rows, nil
-}
-
-var SQLSaveBySemesterPkey = SQLInsertSemesterRows + `
-	ON CONFLICT ("id") DO UPDATE
-		SET ("id", "year", "season") = (
-			SELECT "id", "year", "season" FROM __values
-			WHERE __values."id" = _t."id"
-		)
-`
-
-// SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
-func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (err error) {
-	if err = execJSON(ctx, db, SQLSaveBySemesterPkey, rows, len(rows)); err != nil {
-		return fmt.Errorf("%w(SaveBySemesterPkey, %w)", ErrPGMG, err)
-	}
-	return nil
-}
-
-var SQLSaveAndReturnBySemesterPkey = SQLSaveBySemesterPkey + sqlReturningSemesterRows
-
-// SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
-// It returns the new values and scan them into given row references.
-func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBySemesterPkey, rows, len(rows))
-	if err != nil {
-		return rows, fmt.Errorf("%w(SaveAndReturnBySemesterPkey, %w)", ErrPGMG, err)
-	}
-	return rows, nil
-}
-
-var SQLDeleteBySemesterPkey = `
-WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."semester", $1))
-DELETE FROM "wise"."semester" AS __table
-	USING __key
-	WHERE (__key."id" = __table."id")
-	`
-
-// DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
-func DeleteBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (affected int64, err error) {
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return affected, fmt.Errorf("%w(DeleteBySemesterPkey, %w)", ErrPGMG, err)
-	}
-	if affected, err = db.ExecCountingAffected(ctx, SQLDeleteBySemesterPkey, b); err != nil {
-		return affected, fmt.Errorf("%w(DeleteBySemesterPkey, %w)", ErrPGMG, err)
-	}
-	return affected, nil
-}
-
-// SemesterYearSeasonKey represents key defined by UNIQUE constraint "semester_year_season_key" for table "semester"
-type SemesterYearSeasonKey struct {
-	Year   int32  `json:"year"`
-	Season string `json:"season"`
-}
-
-func (r *Semester) SemesterYearSeasonKey() SemesterYearSeasonKey {
-	k := SemesterYearSeasonKey{}
-	k.Year = r.Year
-	k.Season = r.Season
-	return k
-}
-
-func (rs SemesterRows) SemesterYearSeasonKeySlice() (keys []SemesterYearSeasonKey) {
-	keys = make([]SemesterYearSeasonKey, len(rs))
-	for i, r := range rs {
-		keys[i] = r.SemesterYearSeasonKey()
-	}
-	return keys
-}
-
-var SQLGetBySemesterYearSeasonKey = `
-	WITH __key AS (
-		SELECT ROW_NUMBER() over () __keyindex,
-			year, season
-		FROM json_populate_recordset(null::"wise"."semester", $1)
-	)
-	SELECT "id", "year", "season"
-	FROM __key JOIN "wise"."semester" AS __table USING ("year", "season")
-	ORDER BY __keyindex
-`
-
-// GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
-func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows SemesterRows, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, fmt.Errorf("%w(GetBySemesterYearSeasonKey, %w)", ErrPGMG, err)
-	}
-	rows = make(SemesterRows, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &Semester{}
-		return rows[i].ReceiveRow()
-	}, SQLGetBySemesterYearSeasonKey, b); err != nil {
-		return nil, fmt.Errorf("%w(GetBySemesterYearSeasonKey, %w)", ErrPGMG, err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].SemesterYearSeasonKey() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
-	}
-	return rows, nil
-}
-
-var SQLSaveBySemesterYearSeasonKey = SQLInsertSemesterRows + `
-	ON CONFLICT ("year", "season") DO UPDATE
-		SET ("id", "year", "season") = (
-			SELECT "id", "year", "season" FROM __values
-			WHERE __values."year" = _t."year"
-				AND __values."season" = _t."season"
-		)
-`
-
-// SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
-func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (err error) {
-	if err = execJSON(ctx, db, SQLSaveBySemesterYearSeasonKey, rows, len(rows)); err != nil {
-		return fmt.Errorf("%w(SaveBySemesterYearSeasonKey, %w)", ErrPGMG, err)
-	}
-	return nil
-}
-
-var SQLSaveAndReturnBySemesterYearSeasonKey = SQLSaveBySemesterYearSeasonKey + sqlReturningSemesterRows
-
-// SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
-// It returns the new values and scan them into given row references.
-func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBySemesterYearSeasonKey, rows, len(rows))
-	if err != nil {
-		return rows, fmt.Errorf("%w(SaveAndReturnBySemesterYearSeasonKey, %w)", ErrPGMG, err)
-	}
-	return rows, nil
-}
-
-var SQLDeleteBySemesterYearSeasonKey = `
-WITH __key AS (SELECT year, season FROM json_populate_recordset(null::"wise"."semester", $1))
-DELETE FROM "wise"."semester" AS __table
-	USING __key
-	WHERE (__key."year" = __table."year")
-	  AND (__key."season" = __table."season")
-	`
-
-// DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
-func DeleteBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (affected int64, err error) {
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return affected, fmt.Errorf("%w(DeleteBySemesterYearSeasonKey, %w)", ErrPGMG, err)
-	}
-	if affected, err = db.ExecCountingAffected(ctx, SQLDeleteBySemesterYearSeasonKey, b); err != nil {
-		return affected, fmt.Errorf("%w(DeleteBySemesterYearSeasonKey, %w)", ErrPGMG, err)
-	}
-	return affected, nil
-}
-
-var SQLInsertProductRows = `
-	WITH __values AS (
-		SELECT
-			COALESCE(__input."id", nextval('wise.product_id_seq'::regclass)) "id",
-			__input."price",
-			__input."stocked",
-			__input."sold"
-		FROM json_populate_recordset(null::"wise"."product", $1) __input
-	)
-	INSERT INTO "wise"."product" AS _t ("id", "price", "stocked", "sold")
-	SELECT "id", "price", "stocked", "sold" FROM __values`
-
-func InsertProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) (err error) {
-	if err = execJSON(ctx, db, SQLInsertProductRows, rows, len(rows)); err != nil {
-		return fmt.Errorf("%w( InsertProductRows, %w)", ErrPGMG, err)
-	}
-	return nil
-}
-
-var sqlReturningProductRows = `
-	RETURNING id, price, stocked, sold
-`
-
-var SQLInsertAndReturnProductRows = SQLInsertProductRows + sqlReturningProductRows
-
-func InsertAndReturnProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) (ProductRows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLInsertAndReturnProductRows, rows, len(rows))
-	if err != nil {
-		return rows, fmt.Errorf("%w(SQLInsertAndReturnProductRows, %w)", ErrPGMG, err)
-	}
-	return rows, nil
-}
-
-// ProductPkey represents key defined by UNIQUE constraint "product_pkey" for table "product"
-type ProductPkey struct {
-	ID int32 `json:"id"`
-}
-
-func (r *Product) ProductPkey() ProductPkey {
-	k := ProductPkey{}
-	if r.ID != nil {
-		k.ID = *r.ID
-	}
-	return k
-}
-
-func (rs ProductRows) ProductPkeySlice() (keys []ProductPkey) {
-	keys = make([]ProductPkey, len(rs))
-	for i, r := range rs {
-		keys[i] = r.ProductPkey()
-	}
-	return keys
-}
-
-var SQLGetByProductPkey = `
-	WITH __key AS (
-		SELECT ROW_NUMBER() over () __keyindex,
-			id
-		FROM json_populate_recordset(null::"wise"."product", $1)
-	)
-	SELECT "id", "price", "stocked", "sold"
-	FROM __key JOIN "wise"."product" AS __table USING ("id")
-	ORDER BY __keyindex
-`
-
-// GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
-func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows ProductRows, err error) {
-	var b []byte
-	if b, err = json.Marshal(keys); err != nil {
-		return nil, fmt.Errorf("%w(GetByProductPkey, %w)", ErrPGMG, err)
-	}
-	rows = make(ProductRows, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &Product{}
-		return rows[i].ReceiveRow()
-	}, SQLGetByProductPkey, b); err != nil {
-		return nil, fmt.Errorf("%w(GetByProductPkey, %w)", ErrPGMG, err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].ProductPkey() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
-		}
-	}
-	return rows, nil
-}
-
-var SQLSaveByProductPkey = SQLInsertProductRows + `
-	ON CONFLICT ("id") DO UPDATE
-		SET ("id", "price", "stocked", "sold") = (
-			SELECT "id", "price", "stocked", "sold" FROM __values
-			WHERE __values."id" = _t."id"
-		)
-`
-
-// SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
-func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) (err error) {
-	if err = execJSON(ctx, db, SQLSaveByProductPkey, rows, len(rows)); err != nil {
-		return fmt.Errorf("%w(SaveByProductPkey, %w)", ErrPGMG, err)
-	}
-	return nil
-}
-
-var SQLSaveAndReturnByProductPkey = SQLSaveByProductPkey + sqlReturningProductRows
-
-// SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
-// It returns the new values and scan them into given row references.
-func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) (ProductRows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnByProductPkey, rows, len(rows))
-	if err != nil {
-		return rows, fmt.Errorf("%w(SaveAndReturnByProductPkey, %w)", ErrPGMG, err)
-	}
-	return rows, nil
-}
-
-var SQLDeleteByProductPkey = `
-WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."product", $1))
-DELETE FROM "wise"."product" AS __table
-	USING __key
-	WHERE (__key."id" = __table."id")
-	`
-
-// DeleteByProductPkey deletes matching rows by ProductPkey keys from table "product"
-func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (affected int64, err error) {
-	b, err := json.Marshal(keys)
-	if err != nil {
-		return affected, fmt.Errorf("%w(DeleteByProductPkey, %w)", ErrPGMG, err)
-	}
-	if affected, err = db.ExecCountingAffected(ctx, SQLDeleteByProductPkey, b); err != nil {
-		return affected, fmt.Errorf("%w(DeleteByProductPkey, %w)", ErrPGMG, err)
-	}
-	return affected, nil
 }
 
 // FindSemesterRows find the rows matching the condition from table "semester"
@@ -643,6 +301,247 @@ func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondit
 			AND (($1::json->>'season' IS NULL) OR CAST($1::json->>'season' AS text) = __t."season")
 	`, arg1)
 	return count, err
+}
+
+// SemesterPkey represents the key defined by UNIQUE constraint "semester_pkey" for table "semester"
+type SemesterPkey struct {
+	ID int32 `json:"id"`
+}
+
+func (r *Semester) SemesterPkey() SemesterPkey {
+	k := SemesterPkey{}
+	if r.ID != nil {
+		k.ID = *r.ID
+	}
+	return k
+}
+
+func (rs SemesterRows) SemesterPkeySlice() (keys []SemesterPkey) {
+	keys = make([]SemesterPkey, len(rs))
+	for i, r := range rs {
+		keys[i] = r.SemesterPkey()
+	}
+	return keys
+}
+
+var sqlGetBySemesterPkey = `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			id
+		FROM json_populate_recordset(null::"wise"."semester", $1)
+	)
+	SELECT "id", "year", "season"
+	FROM __key JOIN "wise"."semester" AS __table USING ("id")
+	ORDER BY __keyindex
+`
+
+// GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
+func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows SemesterRows, err error) {
+	var b []byte
+	if b, err = json.Marshal(keys); err != nil {
+		return nil, fmt.Errorf("%w(GetBySemesterPkey, %w)", ErrPGMG, err)
+	}
+	rows = make(SemesterRows, len(keys))
+	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows[i] = &Semester{}
+		return rows[i].ReceiveRow()
+	}, sqlGetBySemesterPkey, b); err != nil {
+		return nil, fmt.Errorf("%w(GetBySemesterPkey, %w)", ErrPGMG, err)
+	}
+	for i := 0; i < len(keys); i++ {
+		if rows[i] == nil {
+			break
+		} else if rows[i].SemesterPkey() != keys[i] {
+			copy(rows[i+1:], rows[i:])
+			rows[i] = nil
+		}
+	}
+	return rows, nil
+}
+
+var sqlSaveBySemesterPkey = sqlInsertSemesterRows + `
+	ON CONFLICT ("id") DO UPDATE
+		SET ("id", "year", "season") = (
+			SELECT "id", "year", "season" FROM __values
+			WHERE __values."id" = _t."id"
+		)
+`
+
+// SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
+func SaveBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (err error) {
+	if err = execJSON(ctx, db, sqlSaveBySemesterPkey, rows, len(rows)); err != nil {
+		return fmt.Errorf("%w(SaveBySemesterPkey, %w)", ErrPGMG, err)
+	}
+	return nil
+}
+
+var sqlSaveAndReturnBySemesterPkey = sqlSaveBySemesterPkey + sqlReturningSemesterRows
+
+// SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlSaveAndReturnBySemesterPkey, rows, len(rows))
+	if err != nil {
+		return rows, fmt.Errorf("%w(SaveAndReturnBySemesterPkey, %w)", ErrPGMG, err)
+	}
+	return rows, nil
+}
+
+var sqlDeleteBySemesterPkey = `
+WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."semester", $1))
+DELETE FROM "wise"."semester" AS __table
+	USING __key
+	WHERE (__key."id" = __table."id")
+	`
+
+// DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
+func DeleteBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (affected int64, err error) {
+	b, err := json.Marshal(keys)
+	if err != nil {
+		return affected, fmt.Errorf("%w(DeleteBySemesterPkey, %w)", ErrPGMG, err)
+	}
+	if affected, err = db.ExecCountingAffected(ctx, sqlDeleteBySemesterPkey, b); err != nil {
+		return affected, fmt.Errorf("%w(DeleteBySemesterPkey, %w)", ErrPGMG, err)
+	}
+	return affected, nil
+}
+
+// SemesterYearSeasonKey represents the key defined by UNIQUE constraint "semester_year_season_key" for table "semester"
+type SemesterYearSeasonKey struct {
+	Year   int32  `json:"year"`
+	Season string `json:"season"`
+}
+
+func (r *Semester) SemesterYearSeasonKey() SemesterYearSeasonKey {
+	k := SemesterYearSeasonKey{}
+	k.Year = r.Year
+	k.Season = r.Season
+	return k
+}
+
+func (rs SemesterRows) SemesterYearSeasonKeySlice() (keys []SemesterYearSeasonKey) {
+	keys = make([]SemesterYearSeasonKey, len(rs))
+	for i, r := range rs {
+		keys[i] = r.SemesterYearSeasonKey()
+	}
+	return keys
+}
+
+var sqlGetBySemesterYearSeasonKey = `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			year, season
+		FROM json_populate_recordset(null::"wise"."semester", $1)
+	)
+	SELECT "id", "year", "season"
+	FROM __key JOIN "wise"."semester" AS __table USING ("year", "season")
+	ORDER BY __keyindex
+`
+
+// GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
+func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows SemesterRows, err error) {
+	var b []byte
+	if b, err = json.Marshal(keys); err != nil {
+		return nil, fmt.Errorf("%w(GetBySemesterYearSeasonKey, %w)", ErrPGMG, err)
+	}
+	rows = make(SemesterRows, len(keys))
+	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows[i] = &Semester{}
+		return rows[i].ReceiveRow()
+	}, sqlGetBySemesterYearSeasonKey, b); err != nil {
+		return nil, fmt.Errorf("%w(GetBySemesterYearSeasonKey, %w)", ErrPGMG, err)
+	}
+	for i := 0; i < len(keys); i++ {
+		if rows[i] == nil {
+			break
+		} else if rows[i].SemesterYearSeasonKey() != keys[i] {
+			copy(rows[i+1:], rows[i:])
+			rows[i] = nil
+		}
+	}
+	return rows, nil
+}
+
+var sqlSaveBySemesterYearSeasonKey = sqlInsertSemesterRows + `
+	ON CONFLICT ("year", "season") DO UPDATE
+		SET ("id", "year", "season") = (
+			SELECT "id", "year", "season" FROM __values
+			WHERE __values."year" = _t."year"
+				AND __values."season" = _t."season"
+		)
+`
+
+// SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
+func SaveBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (err error) {
+	if err = execJSON(ctx, db, sqlSaveBySemesterYearSeasonKey, rows, len(rows)); err != nil {
+		return fmt.Errorf("%w(SaveBySemesterYearSeasonKey, %w)", ErrPGMG, err)
+	}
+	return nil
+}
+
+var sqlSaveAndReturnBySemesterYearSeasonKey = sqlSaveBySemesterYearSeasonKey + sqlReturningSemesterRows
+
+// SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlSaveAndReturnBySemesterYearSeasonKey, rows, len(rows))
+	if err != nil {
+		return rows, fmt.Errorf("%w(SaveAndReturnBySemesterYearSeasonKey, %w)", ErrPGMG, err)
+	}
+	return rows, nil
+}
+
+var sqlDeleteBySemesterYearSeasonKey = `
+WITH __key AS (SELECT year, season FROM json_populate_recordset(null::"wise"."semester", $1))
+DELETE FROM "wise"."semester" AS __table
+	USING __key
+	WHERE (__key."year" = __table."year")
+	  AND (__key."season" = __table."season")
+	`
+
+// DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
+func DeleteBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (affected int64, err error) {
+	b, err := json.Marshal(keys)
+	if err != nil {
+		return affected, fmt.Errorf("%w(DeleteBySemesterYearSeasonKey, %w)", ErrPGMG, err)
+	}
+	if affected, err = db.ExecCountingAffected(ctx, sqlDeleteBySemesterYearSeasonKey, b); err != nil {
+		return affected, fmt.Errorf("%w(DeleteBySemesterYearSeasonKey, %w)", ErrPGMG, err)
+	}
+	return affected, nil
+}
+
+var sqlInsertProductRows = `
+	WITH __values AS (
+		SELECT
+			COALESCE(__input."id", nextval('wise.product_id_seq'::regclass)) "id",
+			__input."price",
+			__input."stocked",
+			__input."sold"
+		FROM json_populate_recordset(null::"wise"."product", $1) __input
+	)
+	INSERT INTO "wise"."product" AS _t ("id", "price", "stocked", "sold")
+	SELECT "id", "price", "stocked", "sold" FROM __values`
+
+func InsertProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) (err error) {
+	if err = execJSON(ctx, db, sqlInsertProductRows, rows, len(rows)); err != nil {
+		return fmt.Errorf("%w( InsertProductRows, %w)", ErrPGMG, err)
+	}
+	return nil
+}
+
+var sqlReturningProductRows = `
+	RETURNING id, price, stocked, sold
+`
+
+var sqlInsertAndReturnProductRows = sqlInsertProductRows + sqlReturningProductRows
+
+func InsertAndReturnProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) (ProductRows, error) {
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlInsertAndReturnProductRows, rows, len(rows))
+	if err != nil {
+		return rows, fmt.Errorf("%w(SQLInsertAndReturnProductRows, %w)", ErrPGMG, err)
+	}
+	return rows, nil
 }
 
 // FindProductRows find the rows matching the condition from table "product"
@@ -698,6 +597,110 @@ func CountProductRows(ctx context.Context, db PGMGDatabase, cond ProductConditio
 	`, arg1)
 	return count, err
 }
+
+// ProductPkey represents the key defined by UNIQUE constraint "product_pkey" for table "product"
+type ProductPkey struct {
+	ID int32 `json:"id"`
+}
+
+func (r *Product) ProductPkey() ProductPkey {
+	k := ProductPkey{}
+	if r.ID != nil {
+		k.ID = *r.ID
+	}
+	return k
+}
+
+func (rs ProductRows) ProductPkeySlice() (keys []ProductPkey) {
+	keys = make([]ProductPkey, len(rs))
+	for i, r := range rs {
+		keys[i] = r.ProductPkey()
+	}
+	return keys
+}
+
+var sqlGetByProductPkey = `
+	WITH __key AS (
+		SELECT ROW_NUMBER() over () __keyindex,
+			id
+		FROM json_populate_recordset(null::"wise"."product", $1)
+	)
+	SELECT "id", "price", "stocked", "sold"
+	FROM __key JOIN "wise"."product" AS __table USING ("id")
+	ORDER BY __keyindex
+`
+
+// GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
+func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows ProductRows, err error) {
+	var b []byte
+	if b, err = json.Marshal(keys); err != nil {
+		return nil, fmt.Errorf("%w(GetByProductPkey, %w)", ErrPGMG, err)
+	}
+	rows = make(ProductRows, len(keys))
+	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
+		rows[i] = &Product{}
+		return rows[i].ReceiveRow()
+	}, sqlGetByProductPkey, b); err != nil {
+		return nil, fmt.Errorf("%w(GetByProductPkey, %w)", ErrPGMG, err)
+	}
+	for i := 0; i < len(keys); i++ {
+		if rows[i] == nil {
+			break
+		} else if rows[i].ProductPkey() != keys[i] {
+			copy(rows[i+1:], rows[i:])
+			rows[i] = nil
+		}
+	}
+	return rows, nil
+}
+
+var sqlSaveByProductPkey = sqlInsertProductRows + `
+	ON CONFLICT ("id") DO UPDATE
+		SET ("id", "price", "stocked", "sold") = (
+			SELECT "id", "price", "stocked", "sold" FROM __values
+			WHERE __values."id" = _t."id"
+		)
+`
+
+// SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
+func SaveByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) (err error) {
+	if err = execJSON(ctx, db, sqlSaveByProductPkey, rows, len(rows)); err != nil {
+		return fmt.Errorf("%w(SaveByProductPkey, %w)", ErrPGMG, err)
+	}
+	return nil
+}
+
+var sqlSaveAndReturnByProductPkey = sqlSaveByProductPkey + sqlReturningProductRows
+
+// SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
+// It returns the new values and scan them into given row references.
+func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) (ProductRows, error) {
+	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlSaveAndReturnByProductPkey, rows, len(rows))
+	if err != nil {
+		return rows, fmt.Errorf("%w(SaveAndReturnByProductPkey, %w)", ErrPGMG, err)
+	}
+	return rows, nil
+}
+
+var sqlDeleteByProductPkey = `
+WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."product", $1))
+DELETE FROM "wise"."product" AS __table
+	USING __key
+	WHERE (__key."id" = __table."id")
+	`
+
+// DeleteByProductPkey deletes matching rows by ProductPkey keys from table "product"
+func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (affected int64, err error) {
+	b, err := json.Marshal(keys)
+	if err != nil {
+		return affected, fmt.Errorf("%w(DeleteByProductPkey, %w)", ErrPGMG, err)
+	}
+	if affected, err = db.ExecCountingAffected(ctx, sqlDeleteByProductPkey, b); err != nil {
+		return affected, fmt.Errorf("%w(DeleteByProductPkey, %w)", ErrPGMG, err)
+	}
+	return affected, nil
+}
+
 func execJSON(ctx context.Context, db PGMGDatabase, sql string, rows interface{}, ern int) (err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(rows); err != nil {
