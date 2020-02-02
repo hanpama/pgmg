@@ -26,47 +26,50 @@ type {{$m.CapitalName}} struct {
 	{{$p.CapitalName}} {{$p.GoInsertType}} ` + "`json:" + `"{{$p.SQLName}}"` + "`" + `
 	{{- end}}
 }
+
+type {{$m.CapitalName}}Rows []*{{$m.CapitalName}}
+
 {{ end -}}
 
-{{ range $i, $m := .Models }}
-
-// New{{$m.CapitalName}}Repository creates a new {{$m.CapitalName}}Repository
-func New{{$m.CapitalName}}Repository(db PGMGDatabase) *{{$m.CapitalName}}Repository {
-	return &{{$m.CapitalName}}Repository{db}
+// NewPGMGRepository creates a new PGMGRepository
+func NewPGMGRepository(db PGMGDatabase) *PGMGRepository {
+	return &PGMGRepository{db}
 }
 
-// {{$m.CapitalName}}Repository gets, saves and deletes rows of table "{{$m.SQLName}}"
-type {{$m.CapitalName}}Repository struct {
+// PGMGRepository provides methods which get, insert, save and delete rows in db
+type PGMGRepository struct {
 	db PGMGDatabase
 }
 
-func (rep *{{$m.CapitalName}}Repository) Insert{{$m.CapitalName}}Rows(ctx context.Context, rows ...*{{$m.CapitalName}}) error {
+{{ range $i, $m := .Models }}
+
+func (rep *PGMGRepository) Insert{{$m.CapitalName}}Rows(ctx context.Context, rows ...*{{$m.CapitalName}}) error {
 	return Insert{{$m.CapitalName}}Rows(ctx, rep.db, rows...)
 }
 
-func (rep *{{$m.CapitalName}}Repository) InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
+func (rep *PGMGRepository) InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
 	return InsertAndReturn{{$m.CapitalName}}Rows(ctx, rep.db, rows...)
 }
 
 {{ range $j, $k := $m.Keys }}
 // GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func (rep *{{$m.CapitalName}}Repository) GetBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}, err error) {
+func (rep *PGMGRepository) GetBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.CapitalName}}) (rows {{$m.CapitalName}}Rows, err error) {
 	return GetBy{{$k.CapitalName}}(ctx, rep.db, keys...)
 }
 
 // SaveBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
-func (rep *{{$m.CapitalName}}Repository) SaveBy{{$k.CapitalName}}(ctx context.Context, rows ...*{{$m.CapitalName}}) error {
+func (rep *PGMGRepository) SaveBy{{$k.CapitalName}}(ctx context.Context, rows ...*{{$m.CapitalName}}) error {
 	return SaveBy{{$k.CapitalName}}(ctx, rep.db, rows...)
 }
 
 // SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
 // It returns the new values and scan them into given row references.
-func (rep *{{$m.CapitalName}}Repository) SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
+func (rep *PGMGRepository) SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
 	return SaveAndReturnBy{{$k.CapitalName}}(ctx, rep.db, rows...)
 }
 
 // DeleteBy{{$k.CapitalName}} deletes matching rows by {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func (rep *{{$m.CapitalName}}Repository) DeleteBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.CapitalName}}) (int64, error) {
+func (rep *PGMGRepository) DeleteBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.CapitalName}}) (int64, error) {
 	return DeleteBy{{$k.CapitalName}}(ctx, rep.db, keys...)
 }
 {{- end }}
@@ -78,15 +81,15 @@ type {{$m.CapitalName}}Condition struct {
 }
 
 // Find{{$m.CapitalName}}Rows find the rows matching the condition from table "{{$m.SQLName}}"
-func (rep *{{$m.CapitalName}}Repository) Find{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) ([]*{{$m.CapitalName}}, error) {
+func (rep *PGMGRepository) Find{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) ({{$m.CapitalName}}Rows, error) {
 	return Find{{$m.CapitalName}}Rows(ctx, rep.db, cond)
 }
 // Delete{{$m.CapitalName}}Rows delete the rows matching the condition from table "{{$m.SQLName}}"
-func (rep *{{$m.CapitalName}}Repository) Delete{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (afftected int64, err error) {
+func (rep *PGMGRepository) Delete{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (afftected int64, err error) {
 	return Delete{{$m.CapitalName}}Rows(ctx, rep.db, cond)
 }
 // Count{{$m.CapitalName}}Rows counts the number of rows matching the condition from table "{{$m.SQLName}}"
-func (rep *{{$m.CapitalName}}Repository) Count{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (int, error) {
+func (rep *PGMGRepository) Count{{$m.CapitalName}}Rows(ctx context.Context, cond {{$m.CapitalName}}Condition) (int, error) {
 	return Count{{$m.CapitalName}}Rows(ctx, rep.db, cond)
 }
 
@@ -150,7 +153,7 @@ var sqlReturning{{$m.CapitalName}}Rows = ` + "`" + `
 
 var SQLInsertAndReturn{{$m.CapitalName}}Rows = SQLInsert{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
 
-func InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
+func InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLInsertAndReturn{{$m.CapitalName}}Rows, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SQLInsertAndReturn{{$m.CapitalName}}Rows, %w)", ErrPGMG, err)
@@ -181,6 +184,14 @@ func (r *{{$m.CapitalName}}) {{$k.CapitalName}}() {{$k.CapitalName}} {
 	return k
 }
 
+func (rs {{$m.CapitalName}}Rows) {{$k.CapitalName}}Slice() (keys []{{$k.CapitalName}}) {
+	keys = make([]{{$k.CapitalName}}, len(rs))
+	for i, r := range rs {
+		keys[i] = r.{{$k.CapitalName}}()
+	}
+	return keys
+}
+
 var SQLGetBy{{$k.CapitalName}} = ` + "`" + `
 	WITH __key AS (
 		SELECT ROW_NUMBER() over () __keyindex,
@@ -193,12 +204,12 @@ var SQLGetBy{{$k.CapitalName}} = ` + "`" + `
 ` + "`" + `
 
 // GetBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows []*{{$m.CapitalName}}, err error) {
+func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.CapitalName}}) (rows {{$m.CapitalName}}Rows, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
-	rows = make([]*{{$m.CapitalName}}, len(keys))
+	rows = make({{$m.CapitalName}}Rows, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &{{$m.CapitalName}}{}
 		return rows[i].ReceiveRow()
@@ -237,7 +248,7 @@ var SQLSaveAndReturnBy{{$k.CapitalName}} = SQLSaveBy{{$k.CapitalName}} + sqlRetu
 
 // SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ([]*{{$m.CapitalName}}, error) {
+func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SaveAndReturnBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
@@ -269,7 +280,7 @@ func DeleteBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{
 
 {{ range $i, $m := .Models }}
 // Find{{$m.CapitalName}}Rows find the rows matching the condition from table "{{$m.SQLName}}"
-func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (rows []*{{$m.CapitalName}}, err error) {
+func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (rows {{$m.CapitalName}}Rows, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
 		return nil, err

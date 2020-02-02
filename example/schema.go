@@ -15,6 +15,8 @@ type Semester struct {
 	Season string `json:"season"`
 }
 
+type SemesterRows []*Semester
+
 // Product represents a row for table "product"
 type Product struct {
 	ID      *int32     `json:"id"`
@@ -23,63 +25,65 @@ type Product struct {
 	Sold    *time.Time `json:"sold"`
 }
 
-// NewSemesterRepository creates a new SemesterRepository
-func NewSemesterRepository(db PGMGDatabase) *SemesterRepository {
-	return &SemesterRepository{db}
+type ProductRows []*Product
+
+// NewPGMGRepository creates a new PGMGRepository
+func NewPGMGRepository(db PGMGDatabase) *PGMGRepository {
+	return &PGMGRepository{db}
 }
 
-// SemesterRepository gets, saves and deletes rows of table "semester"
-type SemesterRepository struct {
+// PGMGRepository provides methods which get, insert, save and delete rows in db
+type PGMGRepository struct {
 	db PGMGDatabase
 }
 
-func (rep *SemesterRepository) InsertSemesterRows(ctx context.Context, rows ...*Semester) error {
+func (rep *PGMGRepository) InsertSemesterRows(ctx context.Context, rows ...*Semester) error {
 	return InsertSemesterRows(ctx, rep.db, rows...)
 }
 
-func (rep *SemesterRepository) InsertAndReturnSemesterRows(ctx context.Context, rows ...*Semester) ([]*Semester, error) {
+func (rep *PGMGRepository) InsertAndReturnSemesterRows(ctx context.Context, rows ...*Semester) (SemesterRows, error) {
 	return InsertAndReturnSemesterRows(ctx, rep.db, rows...)
 }
 
 // GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
-func (rep *SemesterRepository) GetBySemesterPkey(ctx context.Context, keys ...SemesterPkey) (rows []*Semester, err error) {
+func (rep *PGMGRepository) GetBySemesterPkey(ctx context.Context, keys ...SemesterPkey) (rows SemesterRows, err error) {
 	return GetBySemesterPkey(ctx, rep.db, keys...)
 }
 
 // SaveBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
-func (rep *SemesterRepository) SaveBySemesterPkey(ctx context.Context, rows ...*Semester) error {
+func (rep *PGMGRepository) SaveBySemesterPkey(ctx context.Context, rows ...*Semester) error {
 	return SaveBySemesterPkey(ctx, rep.db, rows...)
 }
 
 // SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
 // It returns the new values and scan them into given row references.
-func (rep *SemesterRepository) SaveAndReturnBySemesterPkey(ctx context.Context, rows ...*Semester) ([]*Semester, error) {
+func (rep *PGMGRepository) SaveAndReturnBySemesterPkey(ctx context.Context, rows ...*Semester) (SemesterRows, error) {
 	return SaveAndReturnBySemesterPkey(ctx, rep.db, rows...)
 }
 
 // DeleteBySemesterPkey deletes matching rows by SemesterPkey keys from table "semester"
-func (rep *SemesterRepository) DeleteBySemesterPkey(ctx context.Context, keys ...SemesterPkey) (int64, error) {
+func (rep *PGMGRepository) DeleteBySemesterPkey(ctx context.Context, keys ...SemesterPkey) (int64, error) {
 	return DeleteBySemesterPkey(ctx, rep.db, keys...)
 }
 
 // GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
-func (rep *SemesterRepository) GetBySemesterYearSeasonKey(ctx context.Context, keys ...SemesterYearSeasonKey) (rows []*Semester, err error) {
+func (rep *PGMGRepository) GetBySemesterYearSeasonKey(ctx context.Context, keys ...SemesterYearSeasonKey) (rows SemesterRows, err error) {
 	return GetBySemesterYearSeasonKey(ctx, rep.db, keys...)
 }
 
 // SaveBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
-func (rep *SemesterRepository) SaveBySemesterYearSeasonKey(ctx context.Context, rows ...*Semester) error {
+func (rep *PGMGRepository) SaveBySemesterYearSeasonKey(ctx context.Context, rows ...*Semester) error {
 	return SaveBySemesterYearSeasonKey(ctx, rep.db, rows...)
 }
 
 // SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
 // It returns the new values and scan them into given row references.
-func (rep *SemesterRepository) SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, rows ...*Semester) ([]*Semester, error) {
+func (rep *PGMGRepository) SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, rows ...*Semester) (SemesterRows, error) {
 	return SaveAndReturnBySemesterYearSeasonKey(ctx, rep.db, rows...)
 }
 
 // DeleteBySemesterYearSeasonKey deletes matching rows by SemesterYearSeasonKey keys from table "semester"
-func (rep *SemesterRepository) DeleteBySemesterYearSeasonKey(ctx context.Context, keys ...SemesterYearSeasonKey) (int64, error) {
+func (rep *PGMGRepository) DeleteBySemesterYearSeasonKey(ctx context.Context, keys ...SemesterYearSeasonKey) (int64, error) {
 	return DeleteBySemesterYearSeasonKey(ctx, rep.db, keys...)
 }
 
@@ -91,56 +95,46 @@ type SemesterCondition struct {
 }
 
 // FindSemesterRows find the rows matching the condition from table "semester"
-func (rep *SemesterRepository) FindSemesterRows(ctx context.Context, cond SemesterCondition) ([]*Semester, error) {
+func (rep *PGMGRepository) FindSemesterRows(ctx context.Context, cond SemesterCondition) (SemesterRows, error) {
 	return FindSemesterRows(ctx, rep.db, cond)
 }
 
 // DeleteSemesterRows delete the rows matching the condition from table "semester"
-func (rep *SemesterRepository) DeleteSemesterRows(ctx context.Context, cond SemesterCondition) (afftected int64, err error) {
+func (rep *PGMGRepository) DeleteSemesterRows(ctx context.Context, cond SemesterCondition) (afftected int64, err error) {
 	return DeleteSemesterRows(ctx, rep.db, cond)
 }
 
 // CountSemesterRows counts the number of rows matching the condition from table "semester"
-func (rep *SemesterRepository) CountSemesterRows(ctx context.Context, cond SemesterCondition) (int, error) {
+func (rep *PGMGRepository) CountSemesterRows(ctx context.Context, cond SemesterCondition) (int, error) {
 	return CountSemesterRows(ctx, rep.db, cond)
 }
 
-// NewProductRepository creates a new ProductRepository
-func NewProductRepository(db PGMGDatabase) *ProductRepository {
-	return &ProductRepository{db}
-}
-
-// ProductRepository gets, saves and deletes rows of table "product"
-type ProductRepository struct {
-	db PGMGDatabase
-}
-
-func (rep *ProductRepository) InsertProductRows(ctx context.Context, rows ...*Product) error {
+func (rep *PGMGRepository) InsertProductRows(ctx context.Context, rows ...*Product) error {
 	return InsertProductRows(ctx, rep.db, rows...)
 }
 
-func (rep *ProductRepository) InsertAndReturnProductRows(ctx context.Context, rows ...*Product) ([]*Product, error) {
+func (rep *PGMGRepository) InsertAndReturnProductRows(ctx context.Context, rows ...*Product) (ProductRows, error) {
 	return InsertAndReturnProductRows(ctx, rep.db, rows...)
 }
 
 // GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
-func (rep *ProductRepository) GetByProductPkey(ctx context.Context, keys ...ProductPkey) (rows []*Product, err error) {
+func (rep *PGMGRepository) GetByProductPkey(ctx context.Context, keys ...ProductPkey) (rows ProductRows, err error) {
 	return GetByProductPkey(ctx, rep.db, keys...)
 }
 
 // SaveByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
-func (rep *ProductRepository) SaveByProductPkey(ctx context.Context, rows ...*Product) error {
+func (rep *PGMGRepository) SaveByProductPkey(ctx context.Context, rows ...*Product) error {
 	return SaveByProductPkey(ctx, rep.db, rows...)
 }
 
 // SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
 // It returns the new values and scan them into given row references.
-func (rep *ProductRepository) SaveAndReturnByProductPkey(ctx context.Context, rows ...*Product) ([]*Product, error) {
+func (rep *PGMGRepository) SaveAndReturnByProductPkey(ctx context.Context, rows ...*Product) (ProductRows, error) {
 	return SaveAndReturnByProductPkey(ctx, rep.db, rows...)
 }
 
 // DeleteByProductPkey deletes matching rows by ProductPkey keys from table "product"
-func (rep *ProductRepository) DeleteByProductPkey(ctx context.Context, keys ...ProductPkey) (int64, error) {
+func (rep *PGMGRepository) DeleteByProductPkey(ctx context.Context, keys ...ProductPkey) (int64, error) {
 	return DeleteByProductPkey(ctx, rep.db, keys...)
 }
 
@@ -153,17 +147,17 @@ type ProductCondition struct {
 }
 
 // FindProductRows find the rows matching the condition from table "product"
-func (rep *ProductRepository) FindProductRows(ctx context.Context, cond ProductCondition) ([]*Product, error) {
+func (rep *PGMGRepository) FindProductRows(ctx context.Context, cond ProductCondition) (ProductRows, error) {
 	return FindProductRows(ctx, rep.db, cond)
 }
 
 // DeleteProductRows delete the rows matching the condition from table "product"
-func (rep *ProductRepository) DeleteProductRows(ctx context.Context, cond ProductCondition) (afftected int64, err error) {
+func (rep *PGMGRepository) DeleteProductRows(ctx context.Context, cond ProductCondition) (afftected int64, err error) {
 	return DeleteProductRows(ctx, rep.db, cond)
 }
 
 // CountProductRows counts the number of rows matching the condition from table "product"
-func (rep *ProductRepository) CountProductRows(ctx context.Context, cond ProductCondition) (int, error) {
+func (rep *PGMGRepository) CountProductRows(ctx context.Context, cond ProductCondition) (int, error) {
 	return CountProductRows(ctx, rep.db, cond)
 }
 
@@ -248,7 +242,7 @@ var sqlReturningSemesterRows = `
 
 var SQLInsertAndReturnSemesterRows = SQLInsertSemesterRows + sqlReturningSemesterRows
 
-func InsertAndReturnSemesterRows(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
+func InsertAndReturnSemesterRows(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLInsertAndReturnSemesterRows, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SQLInsertAndReturnSemesterRows, %w)", ErrPGMG, err)
@@ -269,6 +263,14 @@ func (r *Semester) SemesterPkey() SemesterPkey {
 	return k
 }
 
+func (rs SemesterRows) SemesterPkeySlice() (keys []SemesterPkey) {
+	keys = make([]SemesterPkey, len(rs))
+	for i, r := range rs {
+		keys[i] = r.SemesterPkey()
+	}
+	return keys
+}
+
 var SQLGetBySemesterPkey = `
 	WITH __key AS (
 		SELECT ROW_NUMBER() over () __keyindex,
@@ -281,12 +283,12 @@ var SQLGetBySemesterPkey = `
 `
 
 // GetBySemesterPkey gets matching rows for given SemesterPkey keys from table "semester"
-func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows []*Semester, err error) {
+func GetBySemesterPkey(ctx context.Context, db PGMGDatabase, keys ...SemesterPkey) (rows SemesterRows, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, fmt.Errorf("%w(GetBySemesterPkey, %w)", ErrPGMG, err)
 	}
-	rows = make([]*Semester, len(keys))
+	rows = make(SemesterRows, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Semester{}
 		return rows[i].ReceiveRow()
@@ -324,7 +326,7 @@ var SQLSaveAndReturnBySemesterPkey = SQLSaveBySemesterPkey + sqlReturningSemeste
 
 // SaveAndReturnBySemesterPkey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_pkey"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
+func SaveAndReturnBySemesterPkey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBySemesterPkey, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SaveAndReturnBySemesterPkey, %w)", ErrPGMG, err)
@@ -364,6 +366,14 @@ func (r *Semester) SemesterYearSeasonKey() SemesterYearSeasonKey {
 	return k
 }
 
+func (rs SemesterRows) SemesterYearSeasonKeySlice() (keys []SemesterYearSeasonKey) {
+	keys = make([]SemesterYearSeasonKey, len(rs))
+	for i, r := range rs {
+		keys[i] = r.SemesterYearSeasonKey()
+	}
+	return keys
+}
+
 var SQLGetBySemesterYearSeasonKey = `
 	WITH __key AS (
 		SELECT ROW_NUMBER() over () __keyindex,
@@ -376,12 +386,12 @@ var SQLGetBySemesterYearSeasonKey = `
 `
 
 // GetBySemesterYearSeasonKey gets matching rows for given SemesterYearSeasonKey keys from table "semester"
-func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows []*Semester, err error) {
+func GetBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, keys ...SemesterYearSeasonKey) (rows SemesterRows, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, fmt.Errorf("%w(GetBySemesterYearSeasonKey, %w)", ErrPGMG, err)
 	}
-	rows = make([]*Semester, len(keys))
+	rows = make(SemesterRows, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Semester{}
 		return rows[i].ReceiveRow()
@@ -420,7 +430,7 @@ var SQLSaveAndReturnBySemesterYearSeasonKey = SQLSaveBySemesterYearSeasonKey + s
 
 // SaveAndReturnBySemesterYearSeasonKey upserts the given rows for table "semester" checking uniqueness by contstraint "semester_year_season_key"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) ([]*Semester, error) {
+func SaveAndReturnBySemesterYearSeasonKey(ctx context.Context, db PGMGDatabase, rows ...*Semester) (SemesterRows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnBySemesterYearSeasonKey, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SaveAndReturnBySemesterYearSeasonKey, %w)", ErrPGMG, err)
@@ -473,7 +483,7 @@ var sqlReturningProductRows = `
 
 var SQLInsertAndReturnProductRows = SQLInsertProductRows + sqlReturningProductRows
 
-func InsertAndReturnProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) ([]*Product, error) {
+func InsertAndReturnProductRows(ctx context.Context, db PGMGDatabase, rows ...*Product) (ProductRows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLInsertAndReturnProductRows, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SQLInsertAndReturnProductRows, %w)", ErrPGMG, err)
@@ -494,6 +504,14 @@ func (r *Product) ProductPkey() ProductPkey {
 	return k
 }
 
+func (rs ProductRows) ProductPkeySlice() (keys []ProductPkey) {
+	keys = make([]ProductPkey, len(rs))
+	for i, r := range rs {
+		keys[i] = r.ProductPkey()
+	}
+	return keys
+}
+
 var SQLGetByProductPkey = `
 	WITH __key AS (
 		SELECT ROW_NUMBER() over () __keyindex,
@@ -506,12 +524,12 @@ var SQLGetByProductPkey = `
 `
 
 // GetByProductPkey gets matching rows for given ProductPkey keys from table "product"
-func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows []*Product, err error) {
+func GetByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPkey) (rows ProductRows, err error) {
 	var b []byte
 	if b, err = json.Marshal(keys); err != nil {
 		return nil, fmt.Errorf("%w(GetByProductPkey, %w)", ErrPGMG, err)
 	}
-	rows = make([]*Product, len(keys))
+	rows = make(ProductRows, len(keys))
 	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
 		rows[i] = &Product{}
 		return rows[i].ReceiveRow()
@@ -549,7 +567,7 @@ var SQLSaveAndReturnByProductPkey = SQLSaveByProductPkey + sqlReturningProductRo
 
 // SaveAndReturnByProductPkey upserts the given rows for table "product" checking uniqueness by contstraint "product_pkey"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) ([]*Product, error) {
+func SaveAndReturnByProductPkey(ctx context.Context, db PGMGDatabase, rows ...*Product) (ProductRows, error) {
 	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, SQLSaveAndReturnByProductPkey, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SaveAndReturnByProductPkey, %w)", ErrPGMG, err)
@@ -577,7 +595,7 @@ func DeleteByProductPkey(ctx context.Context, db PGMGDatabase, keys ...ProductPk
 }
 
 // FindSemesterRows find the rows matching the condition from table "semester"
-func FindSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (rows []*Semester, err error) {
+func FindSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondition) (rows SemesterRows, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
 		return nil, err
@@ -628,7 +646,7 @@ func CountSemesterRows(ctx context.Context, db PGMGDatabase, cond SemesterCondit
 }
 
 // FindProductRows find the rows matching the condition from table "product"
-func FindProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (rows []*Product, err error) {
+func FindProductRows(ctx context.Context, db PGMGDatabase, cond ProductCondition) (rows ProductRows, err error) {
 	var arg1 []byte
 	if arg1, err = json.Marshal(cond); err != nil {
 		return nil, err
