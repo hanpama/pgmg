@@ -122,6 +122,20 @@ func (r *{{$m.CapitalName}}) ReceiveRow() []interface{} {
 		{{- end -}}
 	}
 }
+
+// ReceiveRows returns pointer slice to receive data for the row on index i
+func (rs *{{$m.CapitalName}}Rows) ReceiveRows(i int) []interface{} {
+	if cap(*rs) <= i {
+		source := *rs
+		*rs = make({{$m.CapitalName}}Rows, i+1)
+		copy(*rs, source)
+	}
+	if (*rs)[i] == nil {
+		(*rs)[i] = new({{$m.CapitalName}})
+	}
+	return (*rs)[i].ReceiveRow()
+}
+
 {{ end }}
 
 
@@ -141,8 +155,8 @@ var sqlInsert{{$m.CapitalName}}Rows = ` + "`" + `
 	INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" AS _t ({{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
 	SELECT {{ range $h, $p := $m.Properties }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM __values` + "`" + `
 
-func Insert{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) (err error) {
-	if err = execJSON(ctx, db, sqlInsert{{$m.CapitalName}}Rows, rows, len(rows)); err != nil {
+func Insert{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, inputs ...*{{$m.CapitalName}}) (err error) {
+	if err = execJSON(ctx, db, sqlInsert{{$m.CapitalName}}Rows, inputs, len(inputs)); err != nil {
 		return fmt.Errorf("%w( Insert{{$m.CapitalName}}Rows, %w)", ErrPGMG, err)
 	}
 	return nil
@@ -154,13 +168,23 @@ var sqlReturning{{$m.CapitalName}}Rows = ` + "`" + `
 
 var sqlInsertAndReturn{{$m.CapitalName}}Rows = sqlInsert{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
 
-func InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlInsertAndReturn{{$m.CapitalName}}Rows, rows, len(rows))
+func InsertAndReturn{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, inputs ...*{{$m.CapitalName}}) (rows {{$m.CapitalName}}Rows, err error) {
+	rows = inputs
+	err = execJSONAndReturn(ctx, db, rows.ReceiveRows, sqlInsertAndReturn{{$m.CapitalName}}Rows, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SQLInsertAndReturn{{$m.CapitalName}}Rows, %w)", ErrPGMG, err)
 	}
 	return rows, nil
 }
+
+var sqlFind{{$m.CapitalName}}Rows = ` + "`" + `
+	SELECT {{range $i, $p := $m.Properties }}{{if $i}}, {{end}}__t.{{$p.SQLName}}{{end}}
+	FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
+	WHERE TRUE
+		{{- range $i, $p := $m.Properties }}
+		AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
+		{{- end }}
+` + "`" + `
 
 // Find{{$m.CapitalName}}Rows find the rows matching the condition from table "{{$m.SQLName}}"
 func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (rows {{$m.CapitalName}}Rows, err error) {
@@ -168,19 +192,19 @@ func Find{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.
 	if arg1, err = json.Marshal(cond); err != nil {
 		return nil, err
 	}
-	_, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows = append(rows, new({{$m.CapitalName}}))
-		return rows[i].ReceiveRow()
-	}, ` + "`" + `
-		SELECT {{range $i, $p := $m.Properties }}{{if $i}}, {{end}}__t.{{$p.SQLName}}{{end}}
-		FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
-		WHERE TRUE
-			{{- range $i, $p := $m.Properties }}
-			AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
-			{{- end }}
-	` + "`" + `, arg1)
-	return rows, err
+	if _, err = db.QueryScan(ctx, rows.ReceiveRows, sqlFind{{$m.CapitalName}}Rows, arg1); err != nil {
+		return nil, err
+	}
+	return rows, nil
 }
+
+var sqlDelete{{$m.CapitalName}}Rows = ` + "`" + `
+	DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
+	WHERE TRUE
+		{{- range $i, $p := $m.Properties }}
+		AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
+		{{- end }}
+` + "`" + `
 
 // Delete{{$m.CapitalName}}Rows delete the rows matching the condition from table "{{$m.SQLName}}"
 func Delete{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (afftected int64, err error) {
@@ -188,14 +212,16 @@ func Delete{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$
 	if arg1, err = json.Marshal(cond); err != nil {
 		return 0, err
 	}
-	return db.ExecCountingAffected(ctx, ` + "`" + `
-		DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
-		WHERE TRUE
-			{{- range $i, $p := $m.Properties }}
-			AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
-			{{- end }}
-	` + "`" + `, arg1)
+	return db.ExecCountingAffected(ctx, sqlDelete{{$m.CapitalName}}Rows, arg1)
 }
+
+var sqlCount{{$m.CapitalName}}Rows = ` + "`" + `
+	SELECT count(*) FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
+	WHERE TRUE
+		{{- range $i, $p := $m.Properties }}
+		AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
+		{{- end }}
+` + "`" + `
 
 // Count{{$m.CapitalName}}Rows counts the number of rows matching the condition from table "{{$m.SQLName}}"
 func Count{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m.CapitalName}}Condition) (count int, err error) {
@@ -203,13 +229,7 @@ func Count{{$m.CapitalName}}Rows(ctx context.Context, db PGMGDatabase, cond {{$m
 	if arg1, err = json.Marshal(cond); err != nil {
 		return 0, err
 	}
-	_, err = db.QueryScan(ctx, func(int) []interface{} { return []interface{}{&count } }, ` + "`" + `
-		SELECT count(*) FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
-		WHERE TRUE
-			{{- range $i, $p := $m.Properties }}
-			AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.SQLType}}) = __t."{{$p.SQLName}}")
-			{{- end }}
-	` + "`" + `, arg1)
+	_, err = db.QueryScan(ctx, func(int) []interface{} { return []interface{}{&count } }, sqlCount{{$m.CapitalName}}Rows, arg1)
 	return count, err
 }
 
@@ -262,10 +282,7 @@ func GetBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, keys ...{{$k.
 		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
 	rows = make({{$m.CapitalName}}Rows, len(keys))
-	if _, err = db.QueryScan(ctx, func(i int) []interface{} {
-		rows[i] = &{{$m.CapitalName}}{}
-		return rows[i].ReceiveRow()
-	}, sqlGetBy{{$k.CapitalName}}, b); err != nil {
+	if _, err = db.QueryScan(ctx, rows.ReceiveRows, sqlGetBy{{$k.CapitalName}}, b); err != nil {
 		return nil, fmt.Errorf("%w(GetBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
 	for i := 0; i < len(keys); i++ {
@@ -300,8 +317,9 @@ var sqlSaveAndReturnBy{{$k.CapitalName}} = sqlSaveBy{{$k.CapitalName}} + sqlRetu
 
 // SaveAndReturnBy{{$k.CapitalName}} upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$k.SQLName}}"
 // It returns the new values and scan them into given row references.
-func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, rows ...*{{$m.CapitalName}}) ({{$m.CapitalName}}Rows, error) {
-	err := execJSONAndReturn(ctx, db, func(i int) []interface{} { return rows[i].ReceiveRow() }, sqlSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
+func SaveAndReturnBy{{$k.CapitalName}}(ctx context.Context, db PGMGDatabase, inputs ...*{{$m.CapitalName}}) (rows {{$m.CapitalName}}Rows, err error) {
+	rows = inputs
+	err = execJSONAndReturn(ctx, db, rows.ReceiveRows, sqlSaveAndReturnBy{{$k.CapitalName}}, rows, len(rows))
 	if err != nil {
 		return rows, fmt.Errorf("%w(SaveAndReturnBy{{$k.CapitalName}}, %w)", ErrPGMG, err)
 	}
@@ -364,8 +382,6 @@ type PGMGDatabase interface {
 }
 
 var ErrUnexpectedRowNumberAffected = fmt.Errorf("pgmg: unexpected row number affected")
-var ErrInvalidConditions = fmt.Errorf("pgmg: invalid conditions")
-
 var ErrPGMG = fmt.Errorf("pgmg: error")
 
 {{ end -}}
