@@ -1,99 +1,481 @@
-[
-  {
-    "name": "semester",
-    "schema": "wise",
-    "columns": [
-      {
-        "name": "id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": "nextval('wise.semester_id_seq'::regclass)"
-      },
-      {
-        "name": "year",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "season",
-        "data_type": "text",
-        "is_nullable": false,
-        "default": ""
-      }
-    ],
-    "keys": [
-      {
-        "name": "semester_pkey",
-        "columns": [
-          {
-            "name": "id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": "nextval('wise.semester_id_seq'::regclass)"
-          }
-        ]
-      },
-      {
-        "name": "semester_year_season_key",
-        "columns": [
-          {
-            "name": "year",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": ""
-          },
-          {
-            "name": "season",
-            "data_type": "text",
-            "is_nullable": false,
-            "default": ""
-          }
-        ]
-      }
-    ]
-  },
-  {
-    "name": "product",
-    "schema": "wise",
-    "columns": [
-      {
-        "name": "id",
-        "data_type": "integer",
-        "is_nullable": false,
-        "default": "nextval('wise.product_id_seq'::regclass)"
-      },
-      {
-        "name": "price",
-        "data_type": "numeric",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "stocked",
-        "data_type": "timestamp with time zone",
-        "is_nullable": false,
-        "default": ""
-      },
-      {
-        "name": "sold",
-        "data_type": "timestamp with time zone",
-        "is_nullable": true,
-        "default": ""
-      }
-    ],
-    "keys": [
-      {
-        "name": "product_pkey",
-        "columns": [
-          {
-            "name": "id",
-            "data_type": "integer",
-            "is_nullable": false,
-            "default": "nextval('wise.product_id_seq'::regclass)"
-          }
-        ]
-      }
-    ]
-  }
-]
+{
+  "schema_name": "wise",
+  "tables": [
+    {
+      "table_name": "package",
+      "insertable": true
+    },
+    {
+      "table_name": "package_product",
+      "insertable": true
+    },
+    {
+      "table_name": "product",
+      "insertable": true
+    },
+    {
+      "table_name": "pop",
+      "insertable": true
+    },
+    {
+      "table_name": "campaign",
+      "insertable": true
+    },
+    {
+      "table_name": "package_agg",
+      "insertable": true
+    }
+  ],
+  "columns": [
+    {
+      "table_name": "campaign",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "campaign",
+      "column_name": "pop_name",
+      "data_type": "text",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "campaign",
+      "column_name": "pop_year",
+      "data_type": "integer",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package",
+      "column_name": "available",
+      "data_type": "boolean",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": "true"
+    },
+    {
+      "table_name": "package_agg",
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package_agg",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package_agg",
+      "column_name": "available",
+      "data_type": "boolean",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package_agg",
+      "column_name": "count",
+      "data_type": "bigint",
+      "is_nullable": true,
+      "is_updatable": false,
+      "default": ""
+    },
+    {
+      "table_name": "package_product",
+      "column_name": "package_id",
+      "data_type": "uuid",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "package_product",
+      "column_name": "product_id",
+      "data_type": "integer",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "pop",
+      "column_name": "name",
+      "data_type": "text",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "pop",
+      "column_name": "year",
+      "data_type": "integer",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "pop",
+      "column_name": "description",
+      "data_type": "text",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "product",
+      "column_name": "id",
+      "data_type": "integer",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": "nextval('wise.product_id_seq'::regclass)"
+    },
+    {
+      "table_name": "product",
+      "column_name": "price",
+      "data_type": "money",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "product",
+      "column_name": "name",
+      "data_type": "character varying",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "product",
+      "column_name": "alias",
+      "data_type": "character varying",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "product",
+      "column_name": "stocked",
+      "data_type": "timestamp with time zone",
+      "is_nullable": false,
+      "is_updatable": true,
+      "default": ""
+    },
+    {
+      "table_name": "product",
+      "column_name": "sold",
+      "data_type": "timestamp with time zone",
+      "is_nullable": true,
+      "is_updatable": true,
+      "default": ""
+    }
+  ],
+  "keys": [
+    {
+      "table_name": "pop",
+      "constraint_name": "pop_pkey",
+      "column_names": [
+        "name",
+        "year"
+      ],
+      "is_primary_key": true
+    },
+    {
+      "table_name": "product",
+      "constraint_name": "product_pkey",
+      "column_names": [
+        "id"
+      ],
+      "is_primary_key": true
+    },
+    {
+      "table_name": "product",
+      "constraint_name": "product_alias_key",
+      "column_names": [
+        "alias"
+      ],
+      "is_primary_key": false
+    },
+    {
+      "table_name": "package",
+      "constraint_name": "package_pkey",
+      "column_names": [
+        "id"
+      ],
+      "is_primary_key": true
+    },
+    {
+      "table_name": "package_product",
+      "constraint_name": "package_product_package_id_product_id_key",
+      "column_names": [
+        "package_id",
+        "product_id"
+      ],
+      "is_primary_key": false
+    },
+    {
+      "table_name": "campaign",
+      "constraint_name": "campaign_pkey",
+      "column_names": [
+        "id"
+      ],
+      "is_primary_key": true
+    }
+  ],
+  "foreign_keys": [
+    {
+      "table_name": "package_product",
+      "constraint_name": "package_product_package_id_fkey",
+      "column_names": [
+        "package_id"
+      ],
+      "target_table_name": "package",
+      "target_constraint_name": "package_pkey"
+    },
+    {
+      "table_name": "package_product",
+      "constraint_name": "package_product_product_id_fkey",
+      "column_names": [
+        "product_id"
+      ],
+      "target_table_name": "product",
+      "target_constraint_name": "product_pkey"
+    },
+    {
+      "table_name": "campaign",
+      "constraint_name": "campaign_pop_name_pop_year_fkey",
+      "column_names": [
+        "pop_name",
+        "pop_year"
+      ],
+      "target_table_name": "pop",
+      "target_constraint_name": "pop_pkey"
+    }
+  ],
+  "types": [
+    {
+      "sql_type": "boolean",
+      "name": "bool",
+      "nullable_name": "*bool",
+      "module": ""
+    },
+    {
+      "sql_type": "character",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "character varying",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "text",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "money",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "inet",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "uuid",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "jsonb",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "json",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "smallint",
+      "name": "int16",
+      "nullable_name": "*int16",
+      "module": ""
+    },
+    {
+      "sql_type": "integer",
+      "name": "int32",
+      "nullable_name": "*int32",
+      "module": ""
+    },
+    {
+      "sql_type": "bigint",
+      "name": "int64",
+      "nullable_name": "*int64",
+      "module": ""
+    },
+    {
+      "sql_type": "smallserial",
+      "name": "uint16",
+      "nullable_name": "*uint16",
+      "module": ""
+    },
+    {
+      "sql_type": "serial",
+      "name": "uint32",
+      "nullable_name": "*uint32",
+      "module": ""
+    },
+    {
+      "sql_type": "bigserial",
+      "name": "uint64",
+      "nullable_name": "*uint64",
+      "module": ""
+    },
+    {
+      "sql_type": "real",
+      "name": "float32",
+      "nullable_name": "*float32",
+      "module": ""
+    },
+    {
+      "sql_type": "numeric",
+      "name": "float64",
+      "nullable_name": "*float64",
+      "module": ""
+    },
+    {
+      "sql_type": "double precision",
+      "name": "float64",
+      "nullable_name": "*float64",
+      "module": ""
+    },
+    {
+      "sql_type": "bytea",
+      "name": "[]byte",
+      "nullable_name": "[]byte",
+      "module": ""
+    },
+    {
+      "sql_type": "date",
+      "name": "time.Time",
+      "nullable_name": "*time.Time",
+      "module": "time"
+    },
+    {
+      "sql_type": "timestamp with time zone",
+      "name": "time.Time",
+      "nullable_name": "*time.Time",
+      "module": "time"
+    },
+    {
+      "sql_type": "time with time zone",
+      "name": "time.Time",
+      "nullable_name": "*time.Time",
+      "module": "time"
+    },
+    {
+      "sql_type": "time without time zone",
+      "name": "time.Time",
+      "nullable_name": "*time.Time",
+      "module": "time"
+    },
+    {
+      "sql_type": "timestamp without time zone",
+      "name": "time.Time",
+      "nullable_name": "*time.Time",
+      "module": "time"
+    },
+    {
+      "sql_type": "interval",
+      "name": "time.Duration",
+      "nullable_name": "*time.Duration",
+      "module": "time"
+    },
+    {
+      "sql_type": "char",
+      "name": "uint8",
+      "nullable_name": "*uint8",
+      "module": ""
+    },
+    {
+      "sql_type": "bit",
+      "name": "uint8",
+      "nullable_name": "*uint8",
+      "module": ""
+    },
+    {
+      "sql_type": "any",
+      "name": "[]byte",
+      "nullable_name": "[]byte",
+      "module": ""
+    },
+    {
+      "sql_type": "name",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "bit varying",
+      "name": "[]byte",
+      "nullable_name": "[]byte",
+      "module": ""
+    },
+    {
+      "sql_type": "hstore",
+      "name": "[]byte",
+      "nullable_name": "[]byte",
+      "module": ""
+    },
+    {
+      "sql_type": "geometry",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    },
+    {
+      "sql_type": "geography",
+      "name": "string",
+      "nullable_name": "*string",
+      "module": ""
+    }
+  ]
+}
