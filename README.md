@@ -81,4 +81,4 @@ func (db *testDB) Exec(ctx context.Context, sql string, args ...interface{}) (in
 
 ## Full Example
 
-* https://github.com/hanpama/pgmg/tree/master/example/example_test.go
+* https://github.com/hanpama/pgmg/tree/master/example/tables/tables_test.go
