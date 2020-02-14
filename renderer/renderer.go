@@ -65,7 +65,6 @@ import (
 {{ range $i, $m := .Schema.Tables }}
 {{ template "row" $m }}
 {{ template "queries" $m}}
-{{ template "key-methods" $m}}
 {{ template "sql" $m }}
 {{ end -}}
 {{ template "common" }}
@@ -88,7 +87,6 @@ import (
 
 {{ template "row" $m }}
 {{ template "queries" $m}}
-{{ template "key-methods" $m}}
 {{ template "sql" $m }}
 
 {{ end -}}
@@ -112,7 +110,7 @@ import (
 
 // {{$m.CapitalName}}Row represents a row for table "{{$m.SQLName}}"
 type {{$m.CapitalName}}Row struct {
-	v {{$m.CapitalName}}Data
+	Data {{$m.CapitalName}}Data
 }
 
 type {{$m.CapitalName}}Data struct {
@@ -137,23 +135,23 @@ func New{{$m.CapitalName}}Rows(data ...{{$m.CapitalName}}Data) {{$m.CapitalName}
 
 {{ if or $p.HasDefault $p.Nullable }}
 // Get{{$p.CapitalName}} gets value of column "{{$p.SQLName}}" from "{{$m.SQLName}}" row
-func (r *{{$m.CapitalName}}Row) Get{{$p.CapitalName}}() {{$p.Type.BaseType}} { return *r.v.{{$p.CapitalName}} }
+func (r *{{$m.CapitalName}}Row) Get{{$p.CapitalName}}() {{$p.Type.BaseType}} { return *r.Data.{{$p.CapitalName}} }
 
 // Set{{$p.CapitalName}} sets value of column "{{$p.SQLName}}" in "{{$m.SQLName}}" row
-func (r *{{$m.CapitalName}}Row) Set{{$p.CapitalName}} ({{$p.LowerName}} {{$p.Type.BaseType}}) { r.v.{{$p.CapitalName}} = &{{$p.LowerName}} }
+func (r *{{$m.CapitalName}}Row) Set{{$p.CapitalName}} ({{$p.LowerName}} {{$p.Type.BaseType}}) { r.Data.{{$p.CapitalName}} = &{{$p.LowerName}} }
 
 // Clear{{$p.CapitalName}} sets value of column "{{$p.SQLName}}" null in "{{$m.SQLName}}" row
-func (r *{{$m.CapitalName}}Row) Clear{{$p.CapitalName}} () { r.v.{{$p.CapitalName}} = nil }
+func (r *{{$m.CapitalName}}Row) Clear{{$p.CapitalName}} () { r.Data.{{$p.CapitalName}} = nil }
 
 // HasValid{{$p.CapitalName}} checks to value of column "{{$p.SQLName}}" is not null
-func (r *{{$m.CapitalName}}Row) HasValid{{$p.CapitalName}}() bool { return r.v.{{$p.CapitalName}} != nil }
+func (r *{{$m.CapitalName}}Row) HasValid{{$p.CapitalName}}() bool { return r.Data.{{$p.CapitalName}} != nil }
 
 {{- else}}
 // Get{{$p.CapitalName}} gets value of column "{{$p.SQLName}}" from "{{$m.SQLName}}" row
-func (r *{{$m.CapitalName}}Row) Get{{$p.CapitalName}}() {{$p.Type.SelectType}} { return r.v.{{$p.CapitalName}} }
+func (r *{{$m.CapitalName}}Row) Get{{$p.CapitalName}}() {{$p.Type.SelectType}} { return r.Data.{{$p.CapitalName}} }
 
 // Set{{$p.CapitalName}} sets value of column "{{$p.SQLName}}" in "{{$m.SQLName}}" row
-func (r *{{$m.CapitalName}}Row) Set{{$p.CapitalName}} ({{$p.LowerName}} {{$p.Type.BaseType}}) { r.v.{{$p.CapitalName}} = {{$p.LowerName}} }
+func (r *{{$m.CapitalName}}Row) Set{{$p.CapitalName}} ({{$p.LowerName}} {{$p.Type.BaseType}}) { r.Data.{{$p.CapitalName}} = {{$p.LowerName}} }
 {{- end}}
 
 {{- end}}
@@ -168,8 +166,8 @@ type {{$k.TypeName}} struct {
 	{{- end }}
 }
 
-func (r *{{$m.CapitalName}}Row) Key{{$k.CapitalName}}() {{$k.TypeName}} {
-	return {{$k.TypeName}}{ {{range $h, $p := $k.Columns}}r.Get{{$p.CapitalName}}(),{{end}} }
+func (r *{{$m.CapitalName}}Row) Key{{$k.CapitalName}}() *{{$k.TypeName}} {
+	return &{{$k.TypeName}}{ {{range $h, $p := $k.Columns}}r.Get{{$p.CapitalName}}(),{{end}} }
 }
 {{ end }}
 
@@ -177,13 +175,11 @@ func (r *{{$m.CapitalName}}Row) Key{{$k.CapitalName}}() {{$k.TypeName}} {
 type {{$m.CapitalName}}Rows []*{{$m.CapitalName}}Row
 
 {{ range $j, $k := $m.Keys }}
-// {{$k.TypeName}}Keyset is a set of key {{$k.TypeName}}
-type {{$k.TypeName}}Keyset map[{{$k.TypeName}}]struct{}
 
-func (rs {{$m.CapitalName}}Rows) Key{{$k.CapitalName}}() (keys {{$k.TypeName}}Keyset) {
-	keys = make({{$k.TypeName}}Keyset)
-	for _, r := range rs {
-		keys[r.Key{{$k.CapitalName}}()] = struct{}{}
+func (rs {{$m.CapitalName}}Rows) Key{{$k.CapitalName}}() (keys []*{{$k.TypeName}}) {
+	keys = make([]*{{$k.TypeName}}, len(rs))
+	for i, r := range rs {
+		keys[i] = r.Key{{$k.CapitalName}}()
 	}
 	return keys
 }
@@ -191,18 +187,26 @@ func (rs {{$m.CapitalName}}Rows) Key{{$k.CapitalName}}() (keys {{$k.TypeName}}Ke
 
 
 {{ range $j, $k := $m.ForeignKeys -}}
-func (r *{{$m.CapitalName}}Row) Ref{{$k.CapitalName}}() {{$k.TypeName}} {
-	return {{$k.TypeName}}{ {{range $h, $p := $k.Columns}}r.Get{{$p.CapitalName}}(),{{end}} }
+func (r *{{$m.CapitalName}}Row) Ref{{$k.CapitalName}}() *{{$k.TypeName}} {
+	{{- range $h, $p := $k.Columns}}
+	{{- if $p.Nullable}}
+	if !r.HasValid{{$p.CapitalName}}() {
+		return nil
+	}
+	{{- end}}
+	{{- end}}
+	return &{{$k.TypeName}}{ {{range $h, $p := $k.Columns}}r.Get{{$p.CapitalName}}(),{{end}} }
 }
 
-func (rs {{$m.CapitalName}}Rows) Ref{{$k.CapitalName}}() (keys {{$k.TypeName}}Keyset) {
-	keys = make({{$k.TypeName}}Keyset)
-	for _, r := range rs {
-		keys[r.Ref{{$k.CapitalName}}()] = struct{}{}
+func (rs {{$m.CapitalName}}Rows) Ref{{$k.CapitalName}}() (keys []*{{$k.TypeName}}) {
+	keys = make([]*{{$k.TypeName}}, len(rs))
+	for i, r := range rs {
+		keys[i] = r.Ref{{$k.CapitalName}}()
 	}
 	return keys
 }
 {{ end }}
+
 
 {{ end -}}
 
@@ -248,15 +252,15 @@ func (t *{{$m.CapitalName}}Table) Save(ctx context.Context, rows ...*{{$m.Capita
 {{end}}
 
 {{range $i, $k := $m.Keys}}
-func (t *{{$m.CapitalName}}Table) GetBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.TypeName}}) ({{$m.CapitalName}}Rows, error) {
+func (t *{{$m.CapitalName}}Table) GetBy{{$k.CapitalName}}(ctx context.Context, keys ...*{{$k.TypeName}}) (map[{{$k.TypeName}}]*{{$m.CapitalName}}Row, error) {
 	return Get{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx, t.h, keys...)
 }
 
-func (t *{{$m.CapitalName}}Table) UpdateBy{{$k.CapitalName}}(ctx context.Context, changeset {{$m.CapitalName}}Values, keys ...{{$k.TypeName}}) (int64, error) {
+func (t *{{$m.CapitalName}}Table) UpdateBy{{$k.CapitalName}}(ctx context.Context, changeset {{$m.CapitalName}}Values, keys ...*{{$k.TypeName}}) (int64, error) {
 	return Update{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx, t.h, changeset, keys...)
 }
 
-func (t *{{$m.CapitalName}}Table) DeleteBy{{$k.CapitalName}}(ctx context.Context, keys ...{{$k.TypeName}}) (int64, error) {
+func (t *{{$m.CapitalName}}Table) DeleteBy{{$k.CapitalName}}(ctx context.Context, keys ...*{{$k.TypeName}}) (int64, error) {
 	return Delete{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx, t.h, keys...)
 }
 {{end}}
@@ -270,45 +274,51 @@ type {{$m.CapitalName}}Values struct {
 }
 
 // Insert{{$m.CapitalName}}Rows inserts the rows into table "{{$m.SQLName}}"
-func Insert{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, rows ...*{{$m.CapitalName}}Row) (affected int64, err error) {
-	affected, err = execWithJSONArgs(ctx, db, sqlInsert{{$m.CapitalName}}Rows, rows)
+func Insert{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, rows ...*{{$m.CapitalName}}Row) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLInsert{{$m.CapitalName}}Rows, rows)
 	if err != nil {
-		return affected, formatError("Insert{{$m.CapitalName}}Rows", err)
+		return numRows, formatError("Insert{{$m.CapitalName}}Rows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // InsertReturning{{$m.CapitalName}}Rows inserts the rows into table "{{$m.SQLName}}" and returns the rows.
-func InsertReturning{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, inputs ...*{{$m.CapitalName}}Row) (affected int, err error) {
+func InsertReturning{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, inputs ...*{{$m.CapitalName}}Row) (numRows int, err error) {
 	rows := {{$m.CapitalName}}Rows(inputs)
-	affected, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlInsertReturning{{$m.CapitalName}}Rows, rows)
+	numRows, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLInsertReturning{{$m.CapitalName}}Rows, rows)
 	if err != nil {
-		return affected, formatError("InsertReturning{{$m.CapitalName}}Rows", err)
+		return numRows, formatError("InsertReturning{{$m.CapitalName}}Rows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // Find{{$m.CapitalName}}Rows finds the rows matching the condition from table "{{$m.SQLName}}"
 func Find{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, cond {{$m.CapitalName}}Values) (rows {{$m.CapitalName}}Rows, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlFind{{$m.CapitalName}}Rows, cond); err != nil {
-		return nil, err
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLFind{{$m.CapitalName}}Rows, cond); err != nil {
+		return nil, formatError("Find{{$m.CapitalName}}Rows", err)
 	}
 	return rows, nil
 }
 
 // Delete{{$m.CapitalName}}Rows deletes the rows matching the condition from table "{{$m.SQLName}}"
-func Delete{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, cond {{$m.CapitalName}}Values) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlDelete{{$m.CapitalName}}Rows, cond)
+func Delete{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, cond {{$m.CapitalName}}Values) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLDelete{{$m.CapitalName}}Rows, cond); err != nil {
+		return numRows, formatError("Delete{{$m.CapitalName}}Rows", err)
+	}
+	return numRows, nil
 }
 
-func Update{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, changeset, filter {{$m.CapitalName}}Values) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlUpdate{{$m.CapitalName}}Rows, changeset, filter)
+func Update{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, changeset, filter {{$m.CapitalName}}Values) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLUpdate{{$m.CapitalName}}Rows, changeset, filter); err != nil {
+		return numRows, formatError("Update{{$m.CapitalName}}Rows", err)
+	}
+	return numRows, nil
 }
 
 // Count{{$m.CapitalName}}Rows counts the number of rows matching the condition from table "{{$m.SQLName}}"
 func Count{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, cond {{$m.CapitalName}}Values) (count int, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count } }, sqlCount{{$m.CapitalName}}Rows, cond); err != nil {
-		return 0, err
+	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count } }, SQLCount{{$m.CapitalName}}Rows, cond); err != nil {
+		return 0, formatError("Count{{$m.CapitalName}}Rows", err)
 	}
 	return count, nil
 }
@@ -316,12 +326,9 @@ func Count{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, cond {{$m.Ca
 {{if $pk}}
 // Save{{$m.CapitalName}}Rows upserts the given rows for table "{{$m.SQLName}}" checking uniqueness by contstraint "{{$pk.SQLName}}"
 func Save{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, rows ...*{{$m.CapitalName}}Row) (err error) {
-	numRows, err := execWithJSONArgs(ctx, db, sqlSave{{$m.CapitalName}}Rows, rows);
+	_, err = execWithJSONArgs(ctx, db, SQLSave{{$m.CapitalName}}Rows, rows);
 	if err != nil {
-		return formatError("Save", err)
-	}
-	if int64(len(rows)) != numRows {
-		return formatError("Save", ErrUnexpectedRowNumberAffected)
+		return formatError("Save{{$m.CapitalName}}Rows", err)
 	}
 	return nil
 }
@@ -330,12 +337,9 @@ func Save{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, rows ...*{{$m
 // It returns the new values and scan them into given row references.
 func SaveReturning{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, inputs ...*{{$m.CapitalName}}Row) (err error) {
 	rows := {{$m.CapitalName}}Rows(inputs)
-	numRows, err := queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlSaveReturning{{$m.CapitalName}}Rows, rows)
+	_, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLSaveReturning{{$m.CapitalName}}Rows, rows)
 	if err != nil {
-		return formatError("SaveReturning", err)
-	}
-	if len(rows) != numRows {
-		return formatError("SaveReturning", ErrUnexpectedRowNumberAffected)
+		return formatError("SaveReturning{{$m.CapitalName}}Rows", err)
 	}
 	return nil
 }
@@ -345,48 +349,59 @@ func SaveReturning{{$m.CapitalName}}Rows(ctx context.Context, db SQLHandle, inpu
 {{ range $j, $k := $m.Keys -}}
 
 // Get{{$m.CapitalName}}RowsBy{{$k.CapitalName}} gets matching rows for given {{$k.CapitalName}} keys from table "{{$m.SQLName}}"
-func Get{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx context.Context, db SQLHandle, keys ...{{$k.TypeName}}) (rows {{$m.CapitalName}}Rows, err error) {
-	rows = make({{$m.CapitalName}}Rows, len(keys))
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlGet{{$m.CapitalName}}RowsBy{{$k.CapitalName}}, keys); err != nil {
-		return nil, formatError("Get{{$m.CapitalName}}RowsBy{{$k.CapitalName}}", err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].Key{{$k.CapitalName}}() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
+func Get{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx context.Context, db SQLHandle, keys ...*{{$k.TypeName}}) (rs map[{{$k.TypeName}}]*{{$m.CapitalName}}Row, err error) {
+	ukm := make(map[{{$k.TypeName}}]struct{}, len(keys))
+	for _, k := range keys {
+		if k != nil {
+			ukm[*k] = struct{}{}
 		}
 	}
-	return rows, nil
+	uks := make([]{{$k.TypeName}}, len(ukm))
+	i := 0
+	for k := range ukm {
+		uks[i] = k
+		i++
+	}
+
+	var r {{$m.CapitalName}}Row
+	rs = make(map[{{$k.TypeName}}]*{{$m.CapitalName}}Row, len(uks))
+	if _, err = queryWithJSONArgs(ctx, db, func (i int) []interface{} {
+		if i > 0 {
+			r := r
+			rs[*r.Key{{$k.CapitalName}}()] = &r
+		}
+		return r.ReceiveRow()
+	}, SQLGet{{$m.CapitalName}}RowsBy{{$k.CapitalName}}, uks); err != nil {
+		return nil, formatError("Get{{$m.CapitalName}}RowsBy{{$k.CapitalName}}", err)
+	}
+	rs[*r.Key{{$k.CapitalName}}()] = &r
+	return rs, nil
 }
 
 // Delete{{$m.CapitalName}}RowsBy{{$k.CapitalName}} deletes matching rows by {{$k.TypeName}} keys from table "{{$m.SQLName}}"
-func Delete{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx context.Context, db SQLHandle, keys ...{{$k.TypeName}}) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlDelete{{$m.CapitalName}}RowsBy{{$k.CapitalName}}, keys)
+func Delete{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx context.Context, db SQLHandle, keys ...*{{$k.TypeName}}) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLDelete{{$m.CapitalName}}RowsBy{{$k.CapitalName}}, keys)
 	if err != nil {
-		return numRows, formatError("DeleteBy{{$k.CapitalName}}", err)
+		return numRows, formatError("Delete{{$m.CapitalName}}RowsBy{{$k.CapitalName}}", err)
 	}
 	return numRows, nil
 }
 
 // Update{{$m.CapitalName}}RowsBy{{$k.CapitalName}} deletes matching rows by {{$k.TypeName}} keys from table "{{$m.SQLName}}"
-func Update{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx context.Context, db SQLHandle, changeset {{$m.CapitalName}}Values, keys ...{{$k.TypeName}}) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlUpdate{{$m.CapitalName}}RowsBy{{$k.CapitalName}}, changeset, keys)
+func Update{{$m.CapitalName}}RowsBy{{$k.CapitalName}}(ctx context.Context, db SQLHandle, changeset {{$m.CapitalName}}Values, keys ...*{{$k.TypeName}}) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLUpdate{{$m.CapitalName}}RowsBy{{$k.CapitalName}}, changeset, keys)
 	if err != nil {
-		return numRows, formatError("UpdateBy{{$k.CapitalName}}", err)
+		return numRows, formatError("Update{{$m.CapitalName}}RowsBy{{$k.CapitalName}}", err)
 	}
 	return numRows, nil
 }
-
-
 
 {{ end }}
 
 func (r *{{$m.CapitalName}}Row) ReceiveRow() []interface{} {
 	return []interface{}{
 		{{- range $i, $p := $m.Columns -}}
-		{{- if $i}}, {{end}}&r.v.{{$p.CapitalName -}}
+		{{- if $i}}, {{end}}&r.Data.{{$p.CapitalName -}}
 		{{- end -}}
 	}
 }
@@ -405,39 +420,16 @@ func (rs *{{$m.CapitalName}}Rows) ReceiveRows(i int) []interface{} {
 }
 
 func (r *{{$m.CapitalName}}Row) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.v)
+	return json.Marshal(r.Data)
 }
 {{ end -}}
 
-{{ define "key-methods" }}
-{{ $m := . -}}
-{{- range $j, $k := $m.Keys }}
-func (keyset {{$k.TypeName}}Keyset) Keys() (keys []{{$k.TypeName}}) {
-	for k := range keyset {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (keyset {{$k.TypeName}}Keyset) Add(keys ...{{$k.TypeName}}) {
-	for _, k := range keys {
-		keyset[k] = struct{}{}
-	}
-}
-
-func (keyset {{$k.TypeName}}Keyset) Remove(keys ...{{$k.TypeName}}) {
-	for _, k := range keys {
-		delete(keyset, k)
-	}
-}
-{{- end }}
-{{- end }}
 
 {{ define "sql" -}}
 {{ $m := . -}}
 {{ $pk := $m.PrimaryKey }}
 var (
-	sqlFind{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLFind{{$m.CapitalName}}Rows = ` + "`" + `
 		WITH __f AS (SELECT {{range $i, $p := $m.Columns }}{{if $i}}, {{end}}"{{$p.SQLName}}"{{end}} FROM json_populate_record(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		SELECT {{range $i, $p := $m.Columns }}{{if $i}}, {{end}}__t.{{$p.SQLName}}{{end}}
 		FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
@@ -445,16 +437,16 @@ var (
 			AND {{end -}}
 			((SELECT __f."{{$p.SQLName}}" IS NULL FROM __f) OR (SELECT __f."{{$p.SQLName}}" = __t."{{$p.SQLName}}" FROM __f))
 			{{- end }}` + "`" + `
-	sqlCount{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLCount{{$m.CapitalName}}Rows = ` + "`" + `
 		WITH __f AS (SELECT {{range $i, $p := $m.Columns }}{{if $i}}, {{end}}"{{$p.SQLName}}"{{end}} FROM json_populate_record(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		SELECT count(*) FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
 		WHERE {{ range $i, $p := $m.Columns -}}{{if $i}}
 			AND {{end -}}
 			((SELECT __f."{{$p.SQLName}}" IS NULL FROM __f) OR (SELECT __f."{{$p.SQLName}}" = __t."{{$p.SQLName}}" FROM __f))
 			{{- end }}` + "`" + `
-	sqlReturning{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLReturning{{$m.CapitalName}}Rows = ` + "`" + `
 		RETURNING {{ range $h, $p := $m.Columns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}` + "`" + `
-	sqlInsert{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLInsert{{$m.CapitalName}}Rows = ` + "`" + `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" AS __t ({{ range $h, $p := $m.UpdatableColumns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
 		SELECT {{ range $h, $p := $m.UpdatableColumns }}{{if $h }}, {{end }}
@@ -462,15 +454,15 @@ var (
 			{{- else}}__v."{{$p.SQLName}}"
 			{{- end}}
 		{{- end}} FROM __v` + "`" + `
-	sqlInsertReturning{{$m.CapitalName}}Rows = sqlInsert{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
-	sqlDelete{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLInsertReturning{{$m.CapitalName}}Rows = SQLInsert{{$m.CapitalName}}Rows + SQLReturning{{$m.CapitalName}}Rows
+	SQLDelete{{$m.CapitalName}}Rows = ` + "`" + `
 		DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
 		WHERE TRUE
 			{{- range $i, $p := $m.Columns }}
 			AND (($1::json->>'{{$p.SQLName}}' IS NULL) OR CAST($1::json->>'{{$p.SQLName}}' AS {{$p.Type.SQLType}}) = __t."{{$p.SQLName}}")
 			{{- end }}` + "`" + `
-	sqlDeleteReturning{{$m.CapitalName}}Rows = sqlDelete{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
-	sqlUpdate{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLDeleteReturning{{$m.CapitalName}}Rows = SQLDelete{{$m.CapitalName}}Rows + SQLReturning{{$m.CapitalName}}Rows
+	SQLUpdate{{$m.CapitalName}}Rows = ` + "`" + `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1)),
 			__f AS (SELECT * FROM json_populate_record(null::"{{$m.Schema}}"."{{$m.SQLName}}", $2))
 		UPDATE "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
@@ -481,9 +473,9 @@ var (
 			AND {{end -}}
 			((SELECT __f."{{$p.SQLName}}" IS NULL FROM __f) OR (SELECT __f."{{$p.SQLName}}" = __t."{{$p.SQLName}}" FROM __f))
 			{{- end }}` + "`" + `
-	sqlUpdateReturning{{$m.CapitalName}}Rows = sqlUpdate{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
+	SQLUpdateReturning{{$m.CapitalName}}Rows = SQLUpdate{{$m.CapitalName}}Rows + SQLReturning{{$m.CapitalName}}Rows
 	{{- if $pk }}
-	sqlReplace{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLReplace{{$m.CapitalName}}Rows = ` + "`" + `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		UPDATE "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
 			SET ({{ range $h, $p := $m.UpdatableColumns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}) = (SELECT {{ range $h, $p := $m.UpdatableColumns }}{{if $h }}, {{end}}
@@ -491,8 +483,8 @@ var (
 			{{- end}}
 			FROM __v WHERE {{ range $h, $p := $pk.Columns }}{{if $h }} AND {{end}}__v."{{$p.SQLName}}" = __t."{{$p.SQLName}}"{{end}})
 		FROM __v WHERE {{ range $h, $p := $pk.Columns }}{{if $h }} AND {{end}}__v."{{$p.SQLName}}" = __t."{{$p.SQLName}}"{{end}}` + "`" + `
-	sqlReplaceReturning{{$m.CapitalName}}Rows = sqlReplace{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
-	sqlSave{{$m.CapitalName}}Rows = ` + "`" + `
+	SQLReplaceReturning{{$m.CapitalName}}Rows = SQLReplace{{$m.CapitalName}}Rows + SQLReturning{{$m.CapitalName}}Rows
+	SQLSave{{$m.CapitalName}}Rows = ` + "`" + `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		INSERT INTO "{{$m.Schema}}"."{{$m.SQLName}}" AS __t ({{ range $h, $p := $m.UpdatableColumns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
 		SELECT {{ range $h, $p := $m.UpdatableColumns }}{{if $h }}, {{end }}
@@ -506,15 +498,15 @@ var (
 			WHERE {{ range $h, $p := $pk.Columns }}{{if $h }}
 				AND {{end}}__v."{{$p.SQLName}}" = __t."{{$p.SQLName}}"{{end}}
 		)` + "`" + `
-	sqlSaveReturning{{$m.CapitalName}}Rows = sqlSave{{$m.CapitalName}}Rows + sqlReturning{{$m.CapitalName}}Rows
+	SQLSaveReturning{{$m.CapitalName}}Rows = SQLSave{{$m.CapitalName}}Rows + SQLReturning{{$m.CapitalName}}Rows
 	{{- end }}
 	{{- range $j, $k := $m.Keys }}
-	sqlGet{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = ` + "`" + `
-		WITH __key AS (SELECT ROW_NUMBER() over () __idx, {{ range $h, $p := $k.Columns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
+	SQLGet{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = ` + "`" + `
+		WITH __key AS (SELECT DISTINCT {{ range $h, $p := $k.Columns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		SELECT {{ range $h, $p := $m.Columns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}}
 		FROM __key JOIN "{{$m.Schema}}"."{{$m.SQLName}}" AS __t USING ({{ range $h, $p := $k.Columns }}{{if $h }}, {{end}}"{{$p.SQLName}}"{{end}})
-		ORDER BY __idx` + "`" + `
-	sqlUpdate{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = ` + "`" + `
+		` + "`" + `
+	SQLUpdate{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = ` + "`" + `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1)),
 		  __key AS (SELECT {{ range $h, $p := $k.Columns }}{{if $h}}, {{end}}{{$p.SQLName}}{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $2))
 		UPDATE "{{$m.Schema}}"."{{$m.SQLName}}" AS __t
@@ -524,10 +516,10 @@ var (
 			{{- end}}
 		FROM __v)
 		FROM __key WHERE {{ range $h, $p := $k.Columns }}{{if $h }}AND {{end}}(__key."{{$p.SQLName}}" = __t."{{$p.SQLName}}"){{end}}` + "`" + `
-	sqlDelete{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = ` + "`" + `
+	SQLDelete{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = ` + "`" + `
 		WITH __key AS (SELECT {{ range $h, $p := $k.Columns }}{{if $h}}, {{end}}{{$p.SQLName}}{{end}} FROM json_populate_recordset(null::"{{$m.Schema}}"."{{$m.SQLName}}", $1))
 		DELETE FROM "{{$m.Schema}}"."{{$m.SQLName}}" AS __t USING __key WHERE {{ range $h, $p := $k.Columns }}{{if $h }} AND {{end}}(__key."{{$p.SQLName}}" = __t."{{$p.SQLName}}"){{end}}` + "`" + `
-	sqlDeleteReturning{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = sqlDelete{{$m.CapitalName}}RowsBy{{$k.CapitalName}} + sqlReturning{{$m.CapitalName}}Rows
+	SQLDeleteReturning{{$m.CapitalName}}RowsBy{{$k.CapitalName}} = SQLDelete{{$m.CapitalName}}RowsBy{{$k.CapitalName}} + SQLReturning{{$m.CapitalName}}Rows
 	{{- end }}
 	)
 {{- end -}}
@@ -560,7 +552,6 @@ func formatError(methodName string, err error) error {
 }
 
 var ErrPGMG = fmt.Errorf("errPGMG")
-var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
 
 type SQLHandle interface {
 	QueryAndReceive(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)

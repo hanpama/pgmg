@@ -8,7 +8,7 @@ import (
 
 // PopRow represents a row for table "pop"
 type PopRow struct {
-	v PopData
+	Data PopData
 }
 
 type PopData struct {
@@ -30,22 +30,22 @@ func NewPopRows(data ...PopData) PopRows {
 }
 
 // GetName gets value of column "name" from "pop" row
-func (r *PopRow) GetName() string { return r.v.Name }
+func (r *PopRow) GetName() string { return r.Data.Name }
 
 // SetName sets value of column "name" in "pop" row
-func (r *PopRow) SetName(name string) { r.v.Name = name }
+func (r *PopRow) SetName(name string) { r.Data.Name = name }
 
 // GetYear gets value of column "year" from "pop" row
-func (r *PopRow) GetYear() int32 { return r.v.Year }
+func (r *PopRow) GetYear() int32 { return r.Data.Year }
 
 // SetYear sets value of column "year" in "pop" row
-func (r *PopRow) SetYear(year int32) { r.v.Year = year }
+func (r *PopRow) SetYear(year int32) { r.Data.Year = year }
 
 // GetDescription gets value of column "description" from "pop" row
-func (r *PopRow) GetDescription() string { return r.v.Description }
+func (r *PopRow) GetDescription() string { return r.Data.Description }
 
 // SetDescription sets value of column "description" in "pop" row
-func (r *PopRow) SetDescription(description string) { r.v.Description = description }
+func (r *PopRow) SetDescription(description string) { r.Data.Description = description }
 
 // PopNameYear represents key defined by PRIMARY KEY constraint "pop_pkey" for table "pop"
 type PopNameYear struct {
@@ -53,20 +53,17 @@ type PopNameYear struct {
 	Year int32  `json:"year"`
 }
 
-func (r *PopRow) KeyNameYear() PopNameYear {
-	return PopNameYear{r.GetName(), r.GetYear()}
+func (r *PopRow) KeyNameYear() *PopNameYear {
+	return &PopNameYear{r.GetName(), r.GetYear()}
 }
 
 // PopRows represents multiple rows for table "pop"
 type PopRows []*PopRow
 
-// PopNameYearKeyset is a set of key PopNameYear
-type PopNameYearKeyset map[PopNameYear]struct{}
-
-func (rs PopRows) KeyNameYear() (keys PopNameYearKeyset) {
-	keys = make(PopNameYearKeyset)
-	for _, r := range rs {
-		keys[r.KeyNameYear()] = struct{}{}
+func (rs PopRows) KeyNameYear() (keys []*PopNameYear) {
+	keys = make([]*PopNameYear, len(rs))
+	for i, r := range rs {
+		keys[i] = r.KeyNameYear()
 	}
 	return keys
 }
@@ -105,15 +102,15 @@ func (t *PopTable) Save(ctx context.Context, rows ...*PopRow) error {
 	return SaveReturningPopRows(ctx, t.h, rows...)
 }
 
-func (t *PopTable) GetByNameYear(ctx context.Context, keys ...PopNameYear) (PopRows, error) {
+func (t *PopTable) GetByNameYear(ctx context.Context, keys ...*PopNameYear) (map[PopNameYear]*PopRow, error) {
 	return GetPopRowsByNameYear(ctx, t.h, keys...)
 }
 
-func (t *PopTable) UpdateByNameYear(ctx context.Context, changeset PopValues, keys ...PopNameYear) (int64, error) {
+func (t *PopTable) UpdateByNameYear(ctx context.Context, changeset PopValues, keys ...*PopNameYear) (int64, error) {
 	return UpdatePopRowsByNameYear(ctx, t.h, changeset, keys...)
 }
 
-func (t *PopTable) DeleteByNameYear(ctx context.Context, keys ...PopNameYear) (int64, error) {
+func (t *PopTable) DeleteByNameYear(ctx context.Context, keys ...*PopNameYear) (int64, error) {
 	return DeletePopRowsByNameYear(ctx, t.h, keys...)
 }
 
@@ -124,57 +121,60 @@ type PopValues struct {
 }
 
 // InsertPopRows inserts the rows into table "pop"
-func InsertPopRows(ctx context.Context, db SQLHandle, rows ...*PopRow) (affected int64, err error) {
-	affected, err = execWithJSONArgs(ctx, db, sqlInsertPopRows, rows)
+func InsertPopRows(ctx context.Context, db SQLHandle, rows ...*PopRow) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLInsertPopRows, rows)
 	if err != nil {
-		return affected, formatError("InsertPopRows", err)
+		return numRows, formatError("InsertPopRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // InsertReturningPopRows inserts the rows into table "pop" and returns the rows.
-func InsertReturningPopRows(ctx context.Context, db SQLHandle, inputs ...*PopRow) (affected int, err error) {
+func InsertReturningPopRows(ctx context.Context, db SQLHandle, inputs ...*PopRow) (numRows int, err error) {
 	rows := PopRows(inputs)
-	affected, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlInsertReturningPopRows, rows)
+	numRows, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLInsertReturningPopRows, rows)
 	if err != nil {
-		return affected, formatError("InsertReturningPopRows", err)
+		return numRows, formatError("InsertReturningPopRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // FindPopRows finds the rows matching the condition from table "pop"
 func FindPopRows(ctx context.Context, db SQLHandle, cond PopValues) (rows PopRows, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlFindPopRows, cond); err != nil {
-		return nil, err
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLFindPopRows, cond); err != nil {
+		return nil, formatError("FindPopRows", err)
 	}
 	return rows, nil
 }
 
 // DeletePopRows deletes the rows matching the condition from table "pop"
-func DeletePopRows(ctx context.Context, db SQLHandle, cond PopValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlDeletePopRows, cond)
+func DeletePopRows(ctx context.Context, db SQLHandle, cond PopValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLDeletePopRows, cond); err != nil {
+		return numRows, formatError("DeletePopRows", err)
+	}
+	return numRows, nil
 }
 
-func UpdatePopRows(ctx context.Context, db SQLHandle, changeset, filter PopValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlUpdatePopRows, changeset, filter)
+func UpdatePopRows(ctx context.Context, db SQLHandle, changeset, filter PopValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePopRows, changeset, filter); err != nil {
+		return numRows, formatError("UpdatePopRows", err)
+	}
+	return numRows, nil
 }
 
 // CountPopRows counts the number of rows matching the condition from table "pop"
 func CountPopRows(ctx context.Context, db SQLHandle, cond PopValues) (count int, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, sqlCountPopRows, cond); err != nil {
-		return 0, err
+	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, SQLCountPopRows, cond); err != nil {
+		return 0, formatError("CountPopRows", err)
 	}
 	return count, nil
 }
 
 // SavePopRows upserts the given rows for table "pop" checking uniqueness by contstraint "pop_pkey"
 func SavePopRows(ctx context.Context, db SQLHandle, rows ...*PopRow) (err error) {
-	numRows, err := execWithJSONArgs(ctx, db, sqlSavePopRows, rows)
+	_, err = execWithJSONArgs(ctx, db, SQLSavePopRows, rows)
 	if err != nil {
-		return formatError("Save", err)
-	}
-	if int64(len(rows)) != numRows {
-		return formatError("Save", ErrUnexpectedRowNumberAffected)
+		return formatError("SavePopRows", err)
 	}
 	return nil
 }
@@ -183,53 +183,63 @@ func SavePopRows(ctx context.Context, db SQLHandle, rows ...*PopRow) (err error)
 // It returns the new values and scan them into given row references.
 func SaveReturningPopRows(ctx context.Context, db SQLHandle, inputs ...*PopRow) (err error) {
 	rows := PopRows(inputs)
-	numRows, err := queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlSaveReturningPopRows, rows)
+	_, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLSaveReturningPopRows, rows)
 	if err != nil {
-		return formatError("SaveReturning", err)
-	}
-	if len(rows) != numRows {
-		return formatError("SaveReturning", ErrUnexpectedRowNumberAffected)
+		return formatError("SaveReturningPopRows", err)
 	}
 	return nil
 }
 
 // GetPopRowsByNameYear gets matching rows for given NameYear keys from table "pop"
-func GetPopRowsByNameYear(ctx context.Context, db SQLHandle, keys ...PopNameYear) (rows PopRows, err error) {
-	rows = make(PopRows, len(keys))
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlGetPopRowsByNameYear, keys); err != nil {
-		return nil, formatError("GetPopRowsByNameYear", err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].KeyNameYear() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
+func GetPopRowsByNameYear(ctx context.Context, db SQLHandle, keys ...*PopNameYear) (rs map[PopNameYear]*PopRow, err error) {
+	ukm := make(map[PopNameYear]struct{}, len(keys))
+	for _, k := range keys {
+		if k != nil {
+			ukm[*k] = struct{}{}
 		}
 	}
-	return rows, nil
+	uks := make([]PopNameYear, len(ukm))
+	i := 0
+	for k := range ukm {
+		uks[i] = k
+		i++
+	}
+
+	var r PopRow
+	rs = make(map[PopNameYear]*PopRow, len(uks))
+	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
+		if i > 0 {
+			r := r
+			rs[*r.KeyNameYear()] = &r
+		}
+		return r.ReceiveRow()
+	}, SQLGetPopRowsByNameYear, uks); err != nil {
+		return nil, formatError("GetPopRowsByNameYear", err)
+	}
+	rs[*r.KeyNameYear()] = &r
+	return rs, nil
 }
 
 // DeletePopRowsByNameYear deletes matching rows by PopNameYear keys from table "pop"
-func DeletePopRowsByNameYear(ctx context.Context, db SQLHandle, keys ...PopNameYear) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlDeletePopRowsByNameYear, keys)
+func DeletePopRowsByNameYear(ctx context.Context, db SQLHandle, keys ...*PopNameYear) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLDeletePopRowsByNameYear, keys)
 	if err != nil {
-		return numRows, formatError("DeleteByNameYear", err)
+		return numRows, formatError("DeletePopRowsByNameYear", err)
 	}
 	return numRows, nil
 }
 
 // UpdatePopRowsByNameYear deletes matching rows by PopNameYear keys from table "pop"
-func UpdatePopRowsByNameYear(ctx context.Context, db SQLHandle, changeset PopValues, keys ...PopNameYear) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlUpdatePopRowsByNameYear, changeset, keys)
+func UpdatePopRowsByNameYear(ctx context.Context, db SQLHandle, changeset PopValues, keys ...*PopNameYear) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePopRowsByNameYear, changeset, keys)
 	if err != nil {
-		return numRows, formatError("UpdateByNameYear", err)
+		return numRows, formatError("UpdatePopRowsByNameYear", err)
 	}
 	return numRows, nil
 }
 
 func (r *PopRow) ReceiveRow() []interface{} {
-	return []interface{}{&r.v.Name, &r.v.Year, &r.v.Description}
+	return []interface{}{&r.Data.Name, &r.Data.Year, &r.Data.Description}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
@@ -246,60 +256,41 @@ func (rs *PopRows) ReceiveRows(i int) []interface{} {
 }
 
 func (r *PopRow) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.v)
-}
-
-func (keyset PopNameYearKeyset) Keys() (keys []PopNameYear) {
-	for k := range keyset {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (keyset PopNameYearKeyset) Add(keys ...PopNameYear) {
-	for _, k := range keys {
-		keyset[k] = struct{}{}
-	}
-}
-
-func (keyset PopNameYearKeyset) Remove(keys ...PopNameYear) {
-	for _, k := range keys {
-		delete(keyset, k)
-	}
+	return json.Marshal(r.Data)
 }
 
 var (
-	sqlFindPopRows = `
+	SQLFindPopRows = `
 		WITH __f AS (SELECT "name", "year", "description" FROM json_populate_record(null::"wise"."pop", $1))
 		SELECT __t.name, __t.year, __t.description
 		FROM "wise"."pop" AS __t
 		WHERE ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."year" IS NULL FROM __f) OR (SELECT __f."year" = __t."year" FROM __f))
 			AND ((SELECT __f."description" IS NULL FROM __f) OR (SELECT __f."description" = __t."description" FROM __f))`
-	sqlCountPopRows = `
+	SQLCountPopRows = `
 		WITH __f AS (SELECT "name", "year", "description" FROM json_populate_record(null::"wise"."pop", $1))
 		SELECT count(*) FROM "wise"."pop" AS __t
 		WHERE ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."year" IS NULL FROM __f) OR (SELECT __f."year" = __t."year" FROM __f))
 			AND ((SELECT __f."description" IS NULL FROM __f) OR (SELECT __f."description" = __t."description" FROM __f))`
-	sqlReturningPopRows = `
+	SQLReturningPopRows = `
 		RETURNING "name", "year", "description"`
-	sqlInsertPopRows = `
+	SQLInsertPopRows = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."pop", $1))
 		INSERT INTO "wise"."pop" AS __t ("name", "year", "description")
 		SELECT 
 			__v."name", 
 			__v."year", 
 			__v."description" FROM __v`
-	sqlInsertReturningPopRows = sqlInsertPopRows + sqlReturningPopRows
-	sqlDeletePopRows          = `
+	SQLInsertReturningPopRows = SQLInsertPopRows + SQLReturningPopRows
+	SQLDeletePopRows          = `
 		DELETE FROM "wise"."pop" AS __t
 		WHERE TRUE
 			AND (($1::json->>'name' IS NULL) OR CAST($1::json->>'name' AS text) = __t."name")
 			AND (($1::json->>'year' IS NULL) OR CAST($1::json->>'year' AS integer) = __t."year")
 			AND (($1::json->>'description' IS NULL) OR CAST($1::json->>'description' AS text) = __t."description")`
-	sqlDeleteReturningPopRows = sqlDeletePopRows + sqlReturningPopRows
-	sqlUpdatePopRows          = `
+	SQLDeleteReturningPopRows = SQLDeletePopRows + SQLReturningPopRows
+	SQLUpdatePopRows          = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."pop", $1)),
 			__f AS (SELECT * FROM json_populate_record(null::"wise"."pop", $2))
 		UPDATE "wise"."pop" AS __t
@@ -310,8 +301,8 @@ var (
 		WHERE ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."year" IS NULL FROM __f) OR (SELECT __f."year" = __t."year" FROM __f))
 			AND ((SELECT __f."description" IS NULL FROM __f) OR (SELECT __f."description" = __t."description" FROM __f))`
-	sqlUpdateReturningPopRows = sqlUpdatePopRows + sqlReturningPopRows
-	sqlReplacePopRows         = `
+	SQLUpdateReturningPopRows = SQLUpdatePopRows + SQLReturningPopRows
+	SQLReplacePopRows         = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."pop", $1))
 		UPDATE "wise"."pop" AS __t
 			SET ("name", "year", "description") = (SELECT 
@@ -320,8 +311,8 @@ var (
 				COALESCE(__v."description", __t."description")
 			FROM __v WHERE __v."name" = __t."name" AND __v."year" = __t."year")
 		FROM __v WHERE __v."name" = __t."name" AND __v."year" = __t."year"`
-	sqlReplaceReturningPopRows = sqlReplacePopRows + sqlReturningPopRows
-	sqlSavePopRows             = `
+	SQLReplaceReturningPopRows = SQLReplacePopRows + SQLReturningPopRows
+	SQLSavePopRows             = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."pop", $1))
 		INSERT INTO "wise"."pop" AS __t ("name", "year", "description")
 		SELECT 
@@ -334,13 +325,13 @@ var (
 			WHERE __v."name" = __t."name"
 				AND __v."year" = __t."year"
 		)`
-	sqlSaveReturningPopRows = sqlSavePopRows + sqlReturningPopRows
-	sqlGetPopRowsByNameYear = `
-		WITH __key AS (SELECT ROW_NUMBER() over () __idx, "name", "year" FROM json_populate_recordset(null::"wise"."pop", $1))
+	SQLSaveReturningPopRows = SQLSavePopRows + SQLReturningPopRows
+	SQLGetPopRowsByNameYear = `
+		WITH __key AS (SELECT DISTINCT "name", "year" FROM json_populate_recordset(null::"wise"."pop", $1))
 		SELECT "name", "year", "description"
 		FROM __key JOIN "wise"."pop" AS __t USING ("name", "year")
-		ORDER BY __idx`
-	sqlUpdatePopRowsByNameYear = `
+		`
+	SQLUpdatePopRowsByNameYear = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."pop", $1)),
 		  __key AS (SELECT name, year FROM json_populate_recordset(null::"wise"."pop", $2))
 		UPDATE "wise"."pop" AS __t
@@ -350,8 +341,8 @@ var (
 			COALESCE(__v."description", __t."description")
 		FROM __v)
 		FROM __key WHERE (__key."name" = __t."name")AND (__key."year" = __t."year")`
-	sqlDeletePopRowsByNameYear = `
+	SQLDeletePopRowsByNameYear = `
 		WITH __key AS (SELECT name, year FROM json_populate_recordset(null::"wise"."pop", $1))
 		DELETE FROM "wise"."pop" AS __t USING __key WHERE (__key."name" = __t."name") AND (__key."year" = __t."year")`
-	sqlDeleteReturningPopRowsByNameYear = sqlDeletePopRowsByNameYear + sqlReturningPopRows
+	SQLDeleteReturningPopRowsByNameYear = SQLDeletePopRowsByNameYear + SQLReturningPopRows
 )

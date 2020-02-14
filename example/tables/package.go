@@ -8,7 +8,7 @@ import (
 
 // PackageRow represents a row for table "package"
 type PackageRow struct {
-	v PackageData
+	Data PackageData
 }
 
 type PackageData struct {
@@ -30,48 +30,45 @@ func NewPackageRows(data ...PackageData) PackageRows {
 }
 
 // GetID gets value of column "id" from "package" row
-func (r *PackageRow) GetID() string { return r.v.ID }
+func (r *PackageRow) GetID() string { return r.Data.ID }
 
 // SetID sets value of column "id" in "package" row
-func (r *PackageRow) SetID(id string) { r.v.ID = id }
+func (r *PackageRow) SetID(id string) { r.Data.ID = id }
 
 // GetName gets value of column "name" from "package" row
-func (r *PackageRow) GetName() string { return r.v.Name }
+func (r *PackageRow) GetName() string { return r.Data.Name }
 
 // SetName sets value of column "name" in "package" row
-func (r *PackageRow) SetName(name string) { r.v.Name = name }
+func (r *PackageRow) SetName(name string) { r.Data.Name = name }
 
 // GetAvailable gets value of column "available" from "package" row
-func (r *PackageRow) GetAvailable() bool { return *r.v.Available }
+func (r *PackageRow) GetAvailable() bool { return *r.Data.Available }
 
 // SetAvailable sets value of column "available" in "package" row
-func (r *PackageRow) SetAvailable(available bool) { r.v.Available = &available }
+func (r *PackageRow) SetAvailable(available bool) { r.Data.Available = &available }
 
 // ClearAvailable sets value of column "available" null in "package" row
-func (r *PackageRow) ClearAvailable() { r.v.Available = nil }
+func (r *PackageRow) ClearAvailable() { r.Data.Available = nil }
 
 // HasValidAvailable checks to value of column "available" is not null
-func (r *PackageRow) HasValidAvailable() bool { return r.v.Available != nil }
+func (r *PackageRow) HasValidAvailable() bool { return r.Data.Available != nil }
 
 // PackageID represents key defined by PRIMARY KEY constraint "package_pkey" for table "package"
 type PackageID struct {
 	ID string `json:"id"`
 }
 
-func (r *PackageRow) KeyID() PackageID {
-	return PackageID{r.GetID()}
+func (r *PackageRow) KeyID() *PackageID {
+	return &PackageID{r.GetID()}
 }
 
 // PackageRows represents multiple rows for table "package"
 type PackageRows []*PackageRow
 
-// PackageIDKeyset is a set of key PackageID
-type PackageIDKeyset map[PackageID]struct{}
-
-func (rs PackageRows) KeyID() (keys PackageIDKeyset) {
-	keys = make(PackageIDKeyset)
-	for _, r := range rs {
-		keys[r.KeyID()] = struct{}{}
+func (rs PackageRows) KeyID() (keys []*PackageID) {
+	keys = make([]*PackageID, len(rs))
+	for i, r := range rs {
+		keys[i] = r.KeyID()
 	}
 	return keys
 }
@@ -110,15 +107,15 @@ func (t *PackageTable) Save(ctx context.Context, rows ...*PackageRow) error {
 	return SaveReturningPackageRows(ctx, t.h, rows...)
 }
 
-func (t *PackageTable) GetByID(ctx context.Context, keys ...PackageID) (PackageRows, error) {
+func (t *PackageTable) GetByID(ctx context.Context, keys ...*PackageID) (map[PackageID]*PackageRow, error) {
 	return GetPackageRowsByID(ctx, t.h, keys...)
 }
 
-func (t *PackageTable) UpdateByID(ctx context.Context, changeset PackageValues, keys ...PackageID) (int64, error) {
+func (t *PackageTable) UpdateByID(ctx context.Context, changeset PackageValues, keys ...*PackageID) (int64, error) {
 	return UpdatePackageRowsByID(ctx, t.h, changeset, keys...)
 }
 
-func (t *PackageTable) DeleteByID(ctx context.Context, keys ...PackageID) (int64, error) {
+func (t *PackageTable) DeleteByID(ctx context.Context, keys ...*PackageID) (int64, error) {
 	return DeletePackageRowsByID(ctx, t.h, keys...)
 }
 
@@ -129,57 +126,60 @@ type PackageValues struct {
 }
 
 // InsertPackageRows inserts the rows into table "package"
-func InsertPackageRows(ctx context.Context, db SQLHandle, rows ...*PackageRow) (affected int64, err error) {
-	affected, err = execWithJSONArgs(ctx, db, sqlInsertPackageRows, rows)
+func InsertPackageRows(ctx context.Context, db SQLHandle, rows ...*PackageRow) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLInsertPackageRows, rows)
 	if err != nil {
-		return affected, formatError("InsertPackageRows", err)
+		return numRows, formatError("InsertPackageRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // InsertReturningPackageRows inserts the rows into table "package" and returns the rows.
-func InsertReturningPackageRows(ctx context.Context, db SQLHandle, inputs ...*PackageRow) (affected int, err error) {
+func InsertReturningPackageRows(ctx context.Context, db SQLHandle, inputs ...*PackageRow) (numRows int, err error) {
 	rows := PackageRows(inputs)
-	affected, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlInsertReturningPackageRows, rows)
+	numRows, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLInsertReturningPackageRows, rows)
 	if err != nil {
-		return affected, formatError("InsertReturningPackageRows", err)
+		return numRows, formatError("InsertReturningPackageRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // FindPackageRows finds the rows matching the condition from table "package"
 func FindPackageRows(ctx context.Context, db SQLHandle, cond PackageValues) (rows PackageRows, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlFindPackageRows, cond); err != nil {
-		return nil, err
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLFindPackageRows, cond); err != nil {
+		return nil, formatError("FindPackageRows", err)
 	}
 	return rows, nil
 }
 
 // DeletePackageRows deletes the rows matching the condition from table "package"
-func DeletePackageRows(ctx context.Context, db SQLHandle, cond PackageValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlDeletePackageRows, cond)
+func DeletePackageRows(ctx context.Context, db SQLHandle, cond PackageValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLDeletePackageRows, cond); err != nil {
+		return numRows, formatError("DeletePackageRows", err)
+	}
+	return numRows, nil
 }
 
-func UpdatePackageRows(ctx context.Context, db SQLHandle, changeset, filter PackageValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlUpdatePackageRows, changeset, filter)
+func UpdatePackageRows(ctx context.Context, db SQLHandle, changeset, filter PackageValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePackageRows, changeset, filter); err != nil {
+		return numRows, formatError("UpdatePackageRows", err)
+	}
+	return numRows, nil
 }
 
 // CountPackageRows counts the number of rows matching the condition from table "package"
 func CountPackageRows(ctx context.Context, db SQLHandle, cond PackageValues) (count int, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, sqlCountPackageRows, cond); err != nil {
-		return 0, err
+	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, SQLCountPackageRows, cond); err != nil {
+		return 0, formatError("CountPackageRows", err)
 	}
 	return count, nil
 }
 
 // SavePackageRows upserts the given rows for table "package" checking uniqueness by contstraint "package_pkey"
 func SavePackageRows(ctx context.Context, db SQLHandle, rows ...*PackageRow) (err error) {
-	numRows, err := execWithJSONArgs(ctx, db, sqlSavePackageRows, rows)
+	_, err = execWithJSONArgs(ctx, db, SQLSavePackageRows, rows)
 	if err != nil {
-		return formatError("Save", err)
-	}
-	if int64(len(rows)) != numRows {
-		return formatError("Save", ErrUnexpectedRowNumberAffected)
+		return formatError("SavePackageRows", err)
 	}
 	return nil
 }
@@ -188,53 +188,63 @@ func SavePackageRows(ctx context.Context, db SQLHandle, rows ...*PackageRow) (er
 // It returns the new values and scan them into given row references.
 func SaveReturningPackageRows(ctx context.Context, db SQLHandle, inputs ...*PackageRow) (err error) {
 	rows := PackageRows(inputs)
-	numRows, err := queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlSaveReturningPackageRows, rows)
+	_, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLSaveReturningPackageRows, rows)
 	if err != nil {
-		return formatError("SaveReturning", err)
-	}
-	if len(rows) != numRows {
-		return formatError("SaveReturning", ErrUnexpectedRowNumberAffected)
+		return formatError("SaveReturningPackageRows", err)
 	}
 	return nil
 }
 
 // GetPackageRowsByID gets matching rows for given ID keys from table "package"
-func GetPackageRowsByID(ctx context.Context, db SQLHandle, keys ...PackageID) (rows PackageRows, err error) {
-	rows = make(PackageRows, len(keys))
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlGetPackageRowsByID, keys); err != nil {
-		return nil, formatError("GetPackageRowsByID", err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].KeyID() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
+func GetPackageRowsByID(ctx context.Context, db SQLHandle, keys ...*PackageID) (rs map[PackageID]*PackageRow, err error) {
+	ukm := make(map[PackageID]struct{}, len(keys))
+	for _, k := range keys {
+		if k != nil {
+			ukm[*k] = struct{}{}
 		}
 	}
-	return rows, nil
+	uks := make([]PackageID, len(ukm))
+	i := 0
+	for k := range ukm {
+		uks[i] = k
+		i++
+	}
+
+	var r PackageRow
+	rs = make(map[PackageID]*PackageRow, len(uks))
+	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
+		if i > 0 {
+			r := r
+			rs[*r.KeyID()] = &r
+		}
+		return r.ReceiveRow()
+	}, SQLGetPackageRowsByID, uks); err != nil {
+		return nil, formatError("GetPackageRowsByID", err)
+	}
+	rs[*r.KeyID()] = &r
+	return rs, nil
 }
 
 // DeletePackageRowsByID deletes matching rows by PackageID keys from table "package"
-func DeletePackageRowsByID(ctx context.Context, db SQLHandle, keys ...PackageID) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlDeletePackageRowsByID, keys)
+func DeletePackageRowsByID(ctx context.Context, db SQLHandle, keys ...*PackageID) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLDeletePackageRowsByID, keys)
 	if err != nil {
-		return numRows, formatError("DeleteByID", err)
+		return numRows, formatError("DeletePackageRowsByID", err)
 	}
 	return numRows, nil
 }
 
 // UpdatePackageRowsByID deletes matching rows by PackageID keys from table "package"
-func UpdatePackageRowsByID(ctx context.Context, db SQLHandle, changeset PackageValues, keys ...PackageID) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlUpdatePackageRowsByID, changeset, keys)
+func UpdatePackageRowsByID(ctx context.Context, db SQLHandle, changeset PackageValues, keys ...*PackageID) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePackageRowsByID, changeset, keys)
 	if err != nil {
-		return numRows, formatError("UpdateByID", err)
+		return numRows, formatError("UpdatePackageRowsByID", err)
 	}
 	return numRows, nil
 }
 
 func (r *PackageRow) ReceiveRow() []interface{} {
-	return []interface{}{&r.v.ID, &r.v.Name, &r.v.Available}
+	return []interface{}{&r.Data.ID, &r.Data.Name, &r.Data.Available}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
@@ -251,60 +261,41 @@ func (rs *PackageRows) ReceiveRows(i int) []interface{} {
 }
 
 func (r *PackageRow) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.v)
-}
-
-func (keyset PackageIDKeyset) Keys() (keys []PackageID) {
-	for k := range keyset {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (keyset PackageIDKeyset) Add(keys ...PackageID) {
-	for _, k := range keys {
-		keyset[k] = struct{}{}
-	}
-}
-
-func (keyset PackageIDKeyset) Remove(keys ...PackageID) {
-	for _, k := range keys {
-		delete(keyset, k)
-	}
+	return json.Marshal(r.Data)
 }
 
 var (
-	sqlFindPackageRows = `
+	SQLFindPackageRows = `
 		WITH __f AS (SELECT "id", "name", "available" FROM json_populate_record(null::"wise"."package", $1))
 		SELECT __t.id, __t.name, __t.available
 		FROM "wise"."package" AS __t
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."available" IS NULL FROM __f) OR (SELECT __f."available" = __t."available" FROM __f))`
-	sqlCountPackageRows = `
+	SQLCountPackageRows = `
 		WITH __f AS (SELECT "id", "name", "available" FROM json_populate_record(null::"wise"."package", $1))
 		SELECT count(*) FROM "wise"."package" AS __t
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."available" IS NULL FROM __f) OR (SELECT __f."available" = __t."available" FROM __f))`
-	sqlReturningPackageRows = `
+	SQLReturningPackageRows = `
 		RETURNING "id", "name", "available"`
-	sqlInsertPackageRows = `
+	SQLInsertPackageRows = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."package", $1))
 		INSERT INTO "wise"."package" AS __t ("id", "name", "available")
 		SELECT 
 			__v."id", 
 			__v."name", 
 			COALESCE(__v."available", true) FROM __v`
-	sqlInsertReturningPackageRows = sqlInsertPackageRows + sqlReturningPackageRows
-	sqlDeletePackageRows          = `
+	SQLInsertReturningPackageRows = SQLInsertPackageRows + SQLReturningPackageRows
+	SQLDeletePackageRows          = `
 		DELETE FROM "wise"."package" AS __t
 		WHERE TRUE
 			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS uuid) = __t."id")
 			AND (($1::json->>'name' IS NULL) OR CAST($1::json->>'name' AS text) = __t."name")
 			AND (($1::json->>'available' IS NULL) OR CAST($1::json->>'available' AS boolean) = __t."available")`
-	sqlDeleteReturningPackageRows = sqlDeletePackageRows + sqlReturningPackageRows
-	sqlUpdatePackageRows          = `
+	SQLDeleteReturningPackageRows = SQLDeletePackageRows + SQLReturningPackageRows
+	SQLUpdatePackageRows          = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."package", $1)),
 			__f AS (SELECT * FROM json_populate_record(null::"wise"."package", $2))
 		UPDATE "wise"."package" AS __t
@@ -315,8 +306,8 @@ var (
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."available" IS NULL FROM __f) OR (SELECT __f."available" = __t."available" FROM __f))`
-	sqlUpdateReturningPackageRows = sqlUpdatePackageRows + sqlReturningPackageRows
-	sqlReplacePackageRows         = `
+	SQLUpdateReturningPackageRows = SQLUpdatePackageRows + SQLReturningPackageRows
+	SQLReplacePackageRows         = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."package", $1))
 		UPDATE "wise"."package" AS __t
 			SET ("id", "name", "available") = (SELECT 
@@ -325,8 +316,8 @@ var (
 				COALESCE(__v."available", __t."available")
 			FROM __v WHERE __v."id" = __t."id")
 		FROM __v WHERE __v."id" = __t."id"`
-	sqlReplaceReturningPackageRows = sqlReplacePackageRows + sqlReturningPackageRows
-	sqlSavePackageRows             = `
+	SQLReplaceReturningPackageRows = SQLReplacePackageRows + SQLReturningPackageRows
+	SQLSavePackageRows             = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."package", $1))
 		INSERT INTO "wise"."package" AS __t ("id", "name", "available")
 		SELECT 
@@ -338,13 +329,13 @@ var (
 			SELECT "id", "name", "available" FROM __v
 			WHERE __v."id" = __t."id"
 		)`
-	sqlSaveReturningPackageRows = sqlSavePackageRows + sqlReturningPackageRows
-	sqlGetPackageRowsByID       = `
-		WITH __key AS (SELECT ROW_NUMBER() over () __idx, "id" FROM json_populate_recordset(null::"wise"."package", $1))
+	SQLSaveReturningPackageRows = SQLSavePackageRows + SQLReturningPackageRows
+	SQLGetPackageRowsByID       = `
+		WITH __key AS (SELECT DISTINCT "id" FROM json_populate_recordset(null::"wise"."package", $1))
 		SELECT "id", "name", "available"
 		FROM __key JOIN "wise"."package" AS __t USING ("id")
-		ORDER BY __idx`
-	sqlUpdatePackageRowsByID = `
+		`
+	SQLUpdatePackageRowsByID = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."package", $1)),
 		  __key AS (SELECT id FROM json_populate_recordset(null::"wise"."package", $2))
 		UPDATE "wise"."package" AS __t
@@ -354,8 +345,8 @@ var (
 			COALESCE(__v."available", __t."available")
 		FROM __v)
 		FROM __key WHERE (__key."id" = __t."id")`
-	sqlDeletePackageRowsByID = `
+	SQLDeletePackageRowsByID = `
 		WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."package", $1))
 		DELETE FROM "wise"."package" AS __t USING __key WHERE (__key."id" = __t."id")`
-	sqlDeleteReturningPackageRowsByID = sqlDeletePackageRowsByID + sqlReturningPackageRows
+	SQLDeleteReturningPackageRowsByID = SQLDeletePackageRowsByID + SQLReturningPackageRows
 )

@@ -31,7 +31,6 @@ func formatError(methodName string, err error) error {
 }
 
 var ErrPGMG = fmt.Errorf("errPGMG")
-var ErrUnexpectedRowNumberAffected = fmt.Errorf("unexpected row number affected")
 
 type SQLHandle interface {
 	QueryAndReceive(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)

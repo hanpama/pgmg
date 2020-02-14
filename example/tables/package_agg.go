@@ -8,7 +8,7 @@ import (
 
 // PackageAggRow represents a row for table "package_agg"
 type PackageAggRow struct {
-	v PackageAggData
+	Data PackageAggData
 }
 
 type PackageAggData struct {
@@ -31,52 +31,52 @@ func NewPackageAggRows(data ...PackageAggData) PackageAggRows {
 }
 
 // GetID gets value of column "id" from "package_agg" row
-func (r *PackageAggRow) GetID() string { return *r.v.ID }
+func (r *PackageAggRow) GetID() string { return *r.Data.ID }
 
 // SetID sets value of column "id" in "package_agg" row
-func (r *PackageAggRow) SetID(id string) { r.v.ID = &id }
+func (r *PackageAggRow) SetID(id string) { r.Data.ID = &id }
 
 // ClearID sets value of column "id" null in "package_agg" row
-func (r *PackageAggRow) ClearID() { r.v.ID = nil }
+func (r *PackageAggRow) ClearID() { r.Data.ID = nil }
 
 // HasValidID checks to value of column "id" is not null
-func (r *PackageAggRow) HasValidID() bool { return r.v.ID != nil }
+func (r *PackageAggRow) HasValidID() bool { return r.Data.ID != nil }
 
 // GetName gets value of column "name" from "package_agg" row
-func (r *PackageAggRow) GetName() string { return *r.v.Name }
+func (r *PackageAggRow) GetName() string { return *r.Data.Name }
 
 // SetName sets value of column "name" in "package_agg" row
-func (r *PackageAggRow) SetName(name string) { r.v.Name = &name }
+func (r *PackageAggRow) SetName(name string) { r.Data.Name = &name }
 
 // ClearName sets value of column "name" null in "package_agg" row
-func (r *PackageAggRow) ClearName() { r.v.Name = nil }
+func (r *PackageAggRow) ClearName() { r.Data.Name = nil }
 
 // HasValidName checks to value of column "name" is not null
-func (r *PackageAggRow) HasValidName() bool { return r.v.Name != nil }
+func (r *PackageAggRow) HasValidName() bool { return r.Data.Name != nil }
 
 // GetAvailable gets value of column "available" from "package_agg" row
-func (r *PackageAggRow) GetAvailable() bool { return *r.v.Available }
+func (r *PackageAggRow) GetAvailable() bool { return *r.Data.Available }
 
 // SetAvailable sets value of column "available" in "package_agg" row
-func (r *PackageAggRow) SetAvailable(available bool) { r.v.Available = &available }
+func (r *PackageAggRow) SetAvailable(available bool) { r.Data.Available = &available }
 
 // ClearAvailable sets value of column "available" null in "package_agg" row
-func (r *PackageAggRow) ClearAvailable() { r.v.Available = nil }
+func (r *PackageAggRow) ClearAvailable() { r.Data.Available = nil }
 
 // HasValidAvailable checks to value of column "available" is not null
-func (r *PackageAggRow) HasValidAvailable() bool { return r.v.Available != nil }
+func (r *PackageAggRow) HasValidAvailable() bool { return r.Data.Available != nil }
 
 // GetCount gets value of column "count" from "package_agg" row
-func (r *PackageAggRow) GetCount() int64 { return *r.v.Count }
+func (r *PackageAggRow) GetCount() int64 { return *r.Data.Count }
 
 // SetCount sets value of column "count" in "package_agg" row
-func (r *PackageAggRow) SetCount(count int64) { r.v.Count = &count }
+func (r *PackageAggRow) SetCount(count int64) { r.Data.Count = &count }
 
 // ClearCount sets value of column "count" null in "package_agg" row
-func (r *PackageAggRow) ClearCount() { r.v.Count = nil }
+func (r *PackageAggRow) ClearCount() { r.Data.Count = nil }
 
 // HasValidCount checks to value of column "count" is not null
-func (r *PackageAggRow) HasValidCount() bool { return r.v.Count != nil }
+func (r *PackageAggRow) HasValidCount() bool { return r.Data.Count != nil }
 
 // PackageAggRows represents multiple rows for table "package_agg"
 type PackageAggRows []*PackageAggRow
@@ -119,51 +119,57 @@ type PackageAggValues struct {
 }
 
 // InsertPackageAggRows inserts the rows into table "package_agg"
-func InsertPackageAggRows(ctx context.Context, db SQLHandle, rows ...*PackageAggRow) (affected int64, err error) {
-	affected, err = execWithJSONArgs(ctx, db, sqlInsertPackageAggRows, rows)
+func InsertPackageAggRows(ctx context.Context, db SQLHandle, rows ...*PackageAggRow) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLInsertPackageAggRows, rows)
 	if err != nil {
-		return affected, formatError("InsertPackageAggRows", err)
+		return numRows, formatError("InsertPackageAggRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // InsertReturningPackageAggRows inserts the rows into table "package_agg" and returns the rows.
-func InsertReturningPackageAggRows(ctx context.Context, db SQLHandle, inputs ...*PackageAggRow) (affected int, err error) {
+func InsertReturningPackageAggRows(ctx context.Context, db SQLHandle, inputs ...*PackageAggRow) (numRows int, err error) {
 	rows := PackageAggRows(inputs)
-	affected, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlInsertReturningPackageAggRows, rows)
+	numRows, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLInsertReturningPackageAggRows, rows)
 	if err != nil {
-		return affected, formatError("InsertReturningPackageAggRows", err)
+		return numRows, formatError("InsertReturningPackageAggRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // FindPackageAggRows finds the rows matching the condition from table "package_agg"
 func FindPackageAggRows(ctx context.Context, db SQLHandle, cond PackageAggValues) (rows PackageAggRows, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlFindPackageAggRows, cond); err != nil {
-		return nil, err
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLFindPackageAggRows, cond); err != nil {
+		return nil, formatError("FindPackageAggRows", err)
 	}
 	return rows, nil
 }
 
 // DeletePackageAggRows deletes the rows matching the condition from table "package_agg"
-func DeletePackageAggRows(ctx context.Context, db SQLHandle, cond PackageAggValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlDeletePackageAggRows, cond)
+func DeletePackageAggRows(ctx context.Context, db SQLHandle, cond PackageAggValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLDeletePackageAggRows, cond); err != nil {
+		return numRows, formatError("DeletePackageAggRows", err)
+	}
+	return numRows, nil
 }
 
-func UpdatePackageAggRows(ctx context.Context, db SQLHandle, changeset, filter PackageAggValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlUpdatePackageAggRows, changeset, filter)
+func UpdatePackageAggRows(ctx context.Context, db SQLHandle, changeset, filter PackageAggValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePackageAggRows, changeset, filter); err != nil {
+		return numRows, formatError("UpdatePackageAggRows", err)
+	}
+	return numRows, nil
 }
 
 // CountPackageAggRows counts the number of rows matching the condition from table "package_agg"
 func CountPackageAggRows(ctx context.Context, db SQLHandle, cond PackageAggValues) (count int, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, sqlCountPackageAggRows, cond); err != nil {
-		return 0, err
+	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, SQLCountPackageAggRows, cond); err != nil {
+		return 0, formatError("CountPackageAggRows", err)
 	}
 	return count, nil
 }
 
 func (r *PackageAggRow) ReceiveRow() []interface{} {
-	return []interface{}{&r.v.ID, &r.v.Name, &r.v.Available, &r.v.Count}
+	return []interface{}{&r.Data.ID, &r.Data.Name, &r.Data.Available, &r.Data.Count}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
@@ -180,11 +186,11 @@ func (rs *PackageAggRows) ReceiveRows(i int) []interface{} {
 }
 
 func (r *PackageAggRow) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.v)
+	return json.Marshal(r.Data)
 }
 
 var (
-	sqlFindPackageAggRows = `
+	SQLFindPackageAggRows = `
 		WITH __f AS (SELECT "id", "name", "available", "count" FROM json_populate_record(null::"wise"."package_agg", $1))
 		SELECT __t.id, __t.name, __t.available, __t.count
 		FROM "wise"."package_agg" AS __t
@@ -192,32 +198,32 @@ var (
 			AND ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."available" IS NULL FROM __f) OR (SELECT __f."available" = __t."available" FROM __f))
 			AND ((SELECT __f."count" IS NULL FROM __f) OR (SELECT __f."count" = __t."count" FROM __f))`
-	sqlCountPackageAggRows = `
+	SQLCountPackageAggRows = `
 		WITH __f AS (SELECT "id", "name", "available", "count" FROM json_populate_record(null::"wise"."package_agg", $1))
 		SELECT count(*) FROM "wise"."package_agg" AS __t
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."available" IS NULL FROM __f) OR (SELECT __f."available" = __t."available" FROM __f))
 			AND ((SELECT __f."count" IS NULL FROM __f) OR (SELECT __f."count" = __t."count" FROM __f))`
-	sqlReturningPackageAggRows = `
+	SQLReturningPackageAggRows = `
 		RETURNING "id", "name", "available", "count"`
-	sqlInsertPackageAggRows = `
+	SQLInsertPackageAggRows = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."package_agg", $1))
 		INSERT INTO "wise"."package_agg" AS __t ("id", "name", "available")
 		SELECT 
 			__v."id", 
 			__v."name", 
 			__v."available" FROM __v`
-	sqlInsertReturningPackageAggRows = sqlInsertPackageAggRows + sqlReturningPackageAggRows
-	sqlDeletePackageAggRows          = `
+	SQLInsertReturningPackageAggRows = SQLInsertPackageAggRows + SQLReturningPackageAggRows
+	SQLDeletePackageAggRows          = `
 		DELETE FROM "wise"."package_agg" AS __t
 		WHERE TRUE
 			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS uuid) = __t."id")
 			AND (($1::json->>'name' IS NULL) OR CAST($1::json->>'name' AS text) = __t."name")
 			AND (($1::json->>'available' IS NULL) OR CAST($1::json->>'available' AS boolean) = __t."available")
 			AND (($1::json->>'count' IS NULL) OR CAST($1::json->>'count' AS bigint) = __t."count")`
-	sqlDeleteReturningPackageAggRows = sqlDeletePackageAggRows + sqlReturningPackageAggRows
-	sqlUpdatePackageAggRows          = `
+	SQLDeleteReturningPackageAggRows = SQLDeletePackageAggRows + SQLReturningPackageAggRows
+	SQLUpdatePackageAggRows          = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."package_agg", $1)),
 			__f AS (SELECT * FROM json_populate_record(null::"wise"."package_agg", $2))
 		UPDATE "wise"."package_agg" AS __t
@@ -229,5 +235,5 @@ var (
 			AND ((SELECT __f."name" IS NULL FROM __f) OR (SELECT __f."name" = __t."name" FROM __f))
 			AND ((SELECT __f."available" IS NULL FROM __f) OR (SELECT __f."available" = __t."available" FROM __f))
 			AND ((SELECT __f."count" IS NULL FROM __f) OR (SELECT __f."count" = __t."count" FROM __f))`
-	sqlUpdateReturningPackageAggRows = sqlUpdatePackageAggRows + sqlReturningPackageAggRows
+	SQLUpdateReturningPackageAggRows = SQLUpdatePackageAggRows + SQLReturningPackageAggRows
 )

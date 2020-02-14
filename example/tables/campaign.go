@@ -8,7 +8,7 @@ import (
 
 // CampaignRow represents a row for table "campaign"
 type CampaignRow struct {
-	v CampaignData
+	Data CampaignData
 }
 
 type CampaignData struct {
@@ -30,66 +30,69 @@ func NewCampaignRows(data ...CampaignData) CampaignRows {
 }
 
 // GetID gets value of column "id" from "campaign" row
-func (r *CampaignRow) GetID() string { return r.v.ID }
+func (r *CampaignRow) GetID() string { return r.Data.ID }
 
 // SetID sets value of column "id" in "campaign" row
-func (r *CampaignRow) SetID(id string) { r.v.ID = id }
+func (r *CampaignRow) SetID(id string) { r.Data.ID = id }
 
 // GetPopName gets value of column "pop_name" from "campaign" row
-func (r *CampaignRow) GetPopName() string { return *r.v.PopName }
+func (r *CampaignRow) GetPopName() string { return *r.Data.PopName }
 
 // SetPopName sets value of column "pop_name" in "campaign" row
-func (r *CampaignRow) SetPopName(popName string) { r.v.PopName = &popName }
+func (r *CampaignRow) SetPopName(popName string) { r.Data.PopName = &popName }
 
 // ClearPopName sets value of column "pop_name" null in "campaign" row
-func (r *CampaignRow) ClearPopName() { r.v.PopName = nil }
+func (r *CampaignRow) ClearPopName() { r.Data.PopName = nil }
 
 // HasValidPopName checks to value of column "pop_name" is not null
-func (r *CampaignRow) HasValidPopName() bool { return r.v.PopName != nil }
+func (r *CampaignRow) HasValidPopName() bool { return r.Data.PopName != nil }
 
 // GetPopYear gets value of column "pop_year" from "campaign" row
-func (r *CampaignRow) GetPopYear() int32 { return *r.v.PopYear }
+func (r *CampaignRow) GetPopYear() int32 { return *r.Data.PopYear }
 
 // SetPopYear sets value of column "pop_year" in "campaign" row
-func (r *CampaignRow) SetPopYear(popYear int32) { r.v.PopYear = &popYear }
+func (r *CampaignRow) SetPopYear(popYear int32) { r.Data.PopYear = &popYear }
 
 // ClearPopYear sets value of column "pop_year" null in "campaign" row
-func (r *CampaignRow) ClearPopYear() { r.v.PopYear = nil }
+func (r *CampaignRow) ClearPopYear() { r.Data.PopYear = nil }
 
 // HasValidPopYear checks to value of column "pop_year" is not null
-func (r *CampaignRow) HasValidPopYear() bool { return r.v.PopYear != nil }
+func (r *CampaignRow) HasValidPopYear() bool { return r.Data.PopYear != nil }
 
 // CampaignID represents key defined by PRIMARY KEY constraint "campaign_pkey" for table "campaign"
 type CampaignID struct {
 	ID string `json:"id"`
 }
 
-func (r *CampaignRow) KeyID() CampaignID {
-	return CampaignID{r.GetID()}
+func (r *CampaignRow) KeyID() *CampaignID {
+	return &CampaignID{r.GetID()}
 }
 
 // CampaignRows represents multiple rows for table "campaign"
 type CampaignRows []*CampaignRow
 
-// CampaignIDKeyset is a set of key CampaignID
-type CampaignIDKeyset map[CampaignID]struct{}
-
-func (rs CampaignRows) KeyID() (keys CampaignIDKeyset) {
-	keys = make(CampaignIDKeyset)
-	for _, r := range rs {
-		keys[r.KeyID()] = struct{}{}
+func (rs CampaignRows) KeyID() (keys []*CampaignID) {
+	keys = make([]*CampaignID, len(rs))
+	for i, r := range rs {
+		keys[i] = r.KeyID()
 	}
 	return keys
 }
 
-func (r *CampaignRow) RefPopNamePopYear() PopNameYear {
-	return PopNameYear{r.GetPopName(), r.GetPopYear()}
+func (r *CampaignRow) RefPopNamePopYear() *PopNameYear {
+	if !r.HasValidPopName() {
+		return nil
+	}
+	if !r.HasValidPopYear() {
+		return nil
+	}
+	return &PopNameYear{r.GetPopName(), r.GetPopYear()}
 }
 
-func (rs CampaignRows) RefPopNamePopYear() (keys PopNameYearKeyset) {
-	keys = make(PopNameYearKeyset)
-	for _, r := range rs {
-		keys[r.RefPopNamePopYear()] = struct{}{}
+func (rs CampaignRows) RefPopNamePopYear() (keys []*PopNameYear) {
+	keys = make([]*PopNameYear, len(rs))
+	for i, r := range rs {
+		keys[i] = r.RefPopNamePopYear()
 	}
 	return keys
 }
@@ -128,15 +131,15 @@ func (t *CampaignTable) Save(ctx context.Context, rows ...*CampaignRow) error {
 	return SaveReturningCampaignRows(ctx, t.h, rows...)
 }
 
-func (t *CampaignTable) GetByID(ctx context.Context, keys ...CampaignID) (CampaignRows, error) {
+func (t *CampaignTable) GetByID(ctx context.Context, keys ...*CampaignID) (map[CampaignID]*CampaignRow, error) {
 	return GetCampaignRowsByID(ctx, t.h, keys...)
 }
 
-func (t *CampaignTable) UpdateByID(ctx context.Context, changeset CampaignValues, keys ...CampaignID) (int64, error) {
+func (t *CampaignTable) UpdateByID(ctx context.Context, changeset CampaignValues, keys ...*CampaignID) (int64, error) {
 	return UpdateCampaignRowsByID(ctx, t.h, changeset, keys...)
 }
 
-func (t *CampaignTable) DeleteByID(ctx context.Context, keys ...CampaignID) (int64, error) {
+func (t *CampaignTable) DeleteByID(ctx context.Context, keys ...*CampaignID) (int64, error) {
 	return DeleteCampaignRowsByID(ctx, t.h, keys...)
 }
 
@@ -147,57 +150,60 @@ type CampaignValues struct {
 }
 
 // InsertCampaignRows inserts the rows into table "campaign"
-func InsertCampaignRows(ctx context.Context, db SQLHandle, rows ...*CampaignRow) (affected int64, err error) {
-	affected, err = execWithJSONArgs(ctx, db, sqlInsertCampaignRows, rows)
+func InsertCampaignRows(ctx context.Context, db SQLHandle, rows ...*CampaignRow) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLInsertCampaignRows, rows)
 	if err != nil {
-		return affected, formatError("InsertCampaignRows", err)
+		return numRows, formatError("InsertCampaignRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // InsertReturningCampaignRows inserts the rows into table "campaign" and returns the rows.
-func InsertReturningCampaignRows(ctx context.Context, db SQLHandle, inputs ...*CampaignRow) (affected int, err error) {
+func InsertReturningCampaignRows(ctx context.Context, db SQLHandle, inputs ...*CampaignRow) (numRows int, err error) {
 	rows := CampaignRows(inputs)
-	affected, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlInsertReturningCampaignRows, rows)
+	numRows, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLInsertReturningCampaignRows, rows)
 	if err != nil {
-		return affected, formatError("InsertReturningCampaignRows", err)
+		return numRows, formatError("InsertReturningCampaignRows", err)
 	}
-	return affected, nil
+	return numRows, nil
 }
 
 // FindCampaignRows finds the rows matching the condition from table "campaign"
 func FindCampaignRows(ctx context.Context, db SQLHandle, cond CampaignValues) (rows CampaignRows, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlFindCampaignRows, cond); err != nil {
-		return nil, err
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLFindCampaignRows, cond); err != nil {
+		return nil, formatError("FindCampaignRows", err)
 	}
 	return rows, nil
 }
 
 // DeleteCampaignRows deletes the rows matching the condition from table "campaign"
-func DeleteCampaignRows(ctx context.Context, db SQLHandle, cond CampaignValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlDeleteCampaignRows, cond)
+func DeleteCampaignRows(ctx context.Context, db SQLHandle, cond CampaignValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLDeleteCampaignRows, cond); err != nil {
+		return numRows, formatError("DeleteCampaignRows", err)
+	}
+	return numRows, nil
 }
 
-func UpdateCampaignRows(ctx context.Context, db SQLHandle, changeset, filter CampaignValues) (afftected int64, err error) {
-	return execWithJSONArgs(ctx, db, sqlUpdateCampaignRows, changeset, filter)
+func UpdateCampaignRows(ctx context.Context, db SQLHandle, changeset, filter CampaignValues) (numRows int64, err error) {
+	if numRows, err = execWithJSONArgs(ctx, db, SQLUpdateCampaignRows, changeset, filter); err != nil {
+		return numRows, formatError("UpdateCampaignRows", err)
+	}
+	return numRows, nil
 }
 
 // CountCampaignRows counts the number of rows matching the condition from table "campaign"
 func CountCampaignRows(ctx context.Context, db SQLHandle, cond CampaignValues) (count int, err error) {
-	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, sqlCountCampaignRows, cond); err != nil {
-		return 0, err
+	if _, err = queryWithJSONArgs(ctx, db, func(int) []interface{} { return []interface{}{&count} }, SQLCountCampaignRows, cond); err != nil {
+		return 0, formatError("CountCampaignRows", err)
 	}
 	return count, nil
 }
 
 // SaveCampaignRows upserts the given rows for table "campaign" checking uniqueness by contstraint "campaign_pkey"
 func SaveCampaignRows(ctx context.Context, db SQLHandle, rows ...*CampaignRow) (err error) {
-	numRows, err := execWithJSONArgs(ctx, db, sqlSaveCampaignRows, rows)
+	_, err = execWithJSONArgs(ctx, db, SQLSaveCampaignRows, rows)
 	if err != nil {
-		return formatError("Save", err)
-	}
-	if int64(len(rows)) != numRows {
-		return formatError("Save", ErrUnexpectedRowNumberAffected)
+		return formatError("SaveCampaignRows", err)
 	}
 	return nil
 }
@@ -206,53 +212,63 @@ func SaveCampaignRows(ctx context.Context, db SQLHandle, rows ...*CampaignRow) (
 // It returns the new values and scan them into given row references.
 func SaveReturningCampaignRows(ctx context.Context, db SQLHandle, inputs ...*CampaignRow) (err error) {
 	rows := CampaignRows(inputs)
-	numRows, err := queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlSaveReturningCampaignRows, rows)
+	_, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLSaveReturningCampaignRows, rows)
 	if err != nil {
-		return formatError("SaveReturning", err)
-	}
-	if len(rows) != numRows {
-		return formatError("SaveReturning", ErrUnexpectedRowNumberAffected)
+		return formatError("SaveReturningCampaignRows", err)
 	}
 	return nil
 }
 
 // GetCampaignRowsByID gets matching rows for given ID keys from table "campaign"
-func GetCampaignRowsByID(ctx context.Context, db SQLHandle, keys ...CampaignID) (rows CampaignRows, err error) {
-	rows = make(CampaignRows, len(keys))
-	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, sqlGetCampaignRowsByID, keys); err != nil {
-		return nil, formatError("GetCampaignRowsByID", err)
-	}
-	for i := 0; i < len(keys); i++ {
-		if rows[i] == nil {
-			break
-		} else if rows[i].KeyID() != keys[i] {
-			copy(rows[i+1:], rows[i:])
-			rows[i] = nil
+func GetCampaignRowsByID(ctx context.Context, db SQLHandle, keys ...*CampaignID) (rs map[CampaignID]*CampaignRow, err error) {
+	ukm := make(map[CampaignID]struct{}, len(keys))
+	for _, k := range keys {
+		if k != nil {
+			ukm[*k] = struct{}{}
 		}
 	}
-	return rows, nil
+	uks := make([]CampaignID, len(ukm))
+	i := 0
+	for k := range ukm {
+		uks[i] = k
+		i++
+	}
+
+	var r CampaignRow
+	rs = make(map[CampaignID]*CampaignRow, len(uks))
+	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
+		if i > 0 {
+			r := r
+			rs[*r.KeyID()] = &r
+		}
+		return r.ReceiveRow()
+	}, SQLGetCampaignRowsByID, uks); err != nil {
+		return nil, formatError("GetCampaignRowsByID", err)
+	}
+	rs[*r.KeyID()] = &r
+	return rs, nil
 }
 
 // DeleteCampaignRowsByID deletes matching rows by CampaignID keys from table "campaign"
-func DeleteCampaignRowsByID(ctx context.Context, db SQLHandle, keys ...CampaignID) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlDeleteCampaignRowsByID, keys)
+func DeleteCampaignRowsByID(ctx context.Context, db SQLHandle, keys ...*CampaignID) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLDeleteCampaignRowsByID, keys)
 	if err != nil {
-		return numRows, formatError("DeleteByID", err)
+		return numRows, formatError("DeleteCampaignRowsByID", err)
 	}
 	return numRows, nil
 }
 
 // UpdateCampaignRowsByID deletes matching rows by CampaignID keys from table "campaign"
-func UpdateCampaignRowsByID(ctx context.Context, db SQLHandle, changeset CampaignValues, keys ...CampaignID) (numRows int64, err error) {
-	numRows, err = execWithJSONArgs(ctx, db, sqlUpdateCampaignRowsByID, changeset, keys)
+func UpdateCampaignRowsByID(ctx context.Context, db SQLHandle, changeset CampaignValues, keys ...*CampaignID) (numRows int64, err error) {
+	numRows, err = execWithJSONArgs(ctx, db, SQLUpdateCampaignRowsByID, changeset, keys)
 	if err != nil {
-		return numRows, formatError("UpdateByID", err)
+		return numRows, formatError("UpdateCampaignRowsByID", err)
 	}
 	return numRows, nil
 }
 
 func (r *CampaignRow) ReceiveRow() []interface{} {
-	return []interface{}{&r.v.ID, &r.v.PopName, &r.v.PopYear}
+	return []interface{}{&r.Data.ID, &r.Data.PopName, &r.Data.PopYear}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
@@ -269,60 +285,41 @@ func (rs *CampaignRows) ReceiveRows(i int) []interface{} {
 }
 
 func (r *CampaignRow) MarshalJSON() ([]byte, error) {
-	return json.Marshal(r.v)
-}
-
-func (keyset CampaignIDKeyset) Keys() (keys []CampaignID) {
-	for k := range keyset {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-func (keyset CampaignIDKeyset) Add(keys ...CampaignID) {
-	for _, k := range keys {
-		keyset[k] = struct{}{}
-	}
-}
-
-func (keyset CampaignIDKeyset) Remove(keys ...CampaignID) {
-	for _, k := range keys {
-		delete(keyset, k)
-	}
+	return json.Marshal(r.Data)
 }
 
 var (
-	sqlFindCampaignRows = `
+	SQLFindCampaignRows = `
 		WITH __f AS (SELECT "id", "pop_name", "pop_year" FROM json_populate_record(null::"wise"."campaign", $1))
 		SELECT __t.id, __t.pop_name, __t.pop_year
 		FROM "wise"."campaign" AS __t
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."pop_name" IS NULL FROM __f) OR (SELECT __f."pop_name" = __t."pop_name" FROM __f))
 			AND ((SELECT __f."pop_year" IS NULL FROM __f) OR (SELECT __f."pop_year" = __t."pop_year" FROM __f))`
-	sqlCountCampaignRows = `
+	SQLCountCampaignRows = `
 		WITH __f AS (SELECT "id", "pop_name", "pop_year" FROM json_populate_record(null::"wise"."campaign", $1))
 		SELECT count(*) FROM "wise"."campaign" AS __t
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."pop_name" IS NULL FROM __f) OR (SELECT __f."pop_name" = __t."pop_name" FROM __f))
 			AND ((SELECT __f."pop_year" IS NULL FROM __f) OR (SELECT __f."pop_year" = __t."pop_year" FROM __f))`
-	sqlReturningCampaignRows = `
+	SQLReturningCampaignRows = `
 		RETURNING "id", "pop_name", "pop_year"`
-	sqlInsertCampaignRows = `
+	SQLInsertCampaignRows = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."campaign", $1))
 		INSERT INTO "wise"."campaign" AS __t ("id", "pop_name", "pop_year")
 		SELECT 
 			__v."id", 
 			__v."pop_name", 
 			__v."pop_year" FROM __v`
-	sqlInsertReturningCampaignRows = sqlInsertCampaignRows + sqlReturningCampaignRows
-	sqlDeleteCampaignRows          = `
+	SQLInsertReturningCampaignRows = SQLInsertCampaignRows + SQLReturningCampaignRows
+	SQLDeleteCampaignRows          = `
 		DELETE FROM "wise"."campaign" AS __t
 		WHERE TRUE
 			AND (($1::json->>'id' IS NULL) OR CAST($1::json->>'id' AS uuid) = __t."id")
 			AND (($1::json->>'pop_name' IS NULL) OR CAST($1::json->>'pop_name' AS text) = __t."pop_name")
 			AND (($1::json->>'pop_year' IS NULL) OR CAST($1::json->>'pop_year' AS integer) = __t."pop_year")`
-	sqlDeleteReturningCampaignRows = sqlDeleteCampaignRows + sqlReturningCampaignRows
-	sqlUpdateCampaignRows          = `
+	SQLDeleteReturningCampaignRows = SQLDeleteCampaignRows + SQLReturningCampaignRows
+	SQLUpdateCampaignRows          = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."campaign", $1)),
 			__f AS (SELECT * FROM json_populate_record(null::"wise"."campaign", $2))
 		UPDATE "wise"."campaign" AS __t
@@ -333,8 +330,8 @@ var (
 		WHERE ((SELECT __f."id" IS NULL FROM __f) OR (SELECT __f."id" = __t."id" FROM __f))
 			AND ((SELECT __f."pop_name" IS NULL FROM __f) OR (SELECT __f."pop_name" = __t."pop_name" FROM __f))
 			AND ((SELECT __f."pop_year" IS NULL FROM __f) OR (SELECT __f."pop_year" = __t."pop_year" FROM __f))`
-	sqlUpdateReturningCampaignRows = sqlUpdateCampaignRows + sqlReturningCampaignRows
-	sqlReplaceCampaignRows         = `
+	SQLUpdateReturningCampaignRows = SQLUpdateCampaignRows + SQLReturningCampaignRows
+	SQLReplaceCampaignRows         = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."campaign", $1))
 		UPDATE "wise"."campaign" AS __t
 			SET ("id", "pop_name", "pop_year") = (SELECT 
@@ -343,8 +340,8 @@ var (
 				COALESCE(__v."pop_year", __t."pop_year")
 			FROM __v WHERE __v."id" = __t."id")
 		FROM __v WHERE __v."id" = __t."id"`
-	sqlReplaceReturningCampaignRows = sqlReplaceCampaignRows + sqlReturningCampaignRows
-	sqlSaveCampaignRows             = `
+	SQLReplaceReturningCampaignRows = SQLReplaceCampaignRows + SQLReturningCampaignRows
+	SQLSaveCampaignRows             = `
 		WITH __v AS (SELECT * FROM json_populate_recordset(null::"wise"."campaign", $1))
 		INSERT INTO "wise"."campaign" AS __t ("id", "pop_name", "pop_year")
 		SELECT 
@@ -356,13 +353,13 @@ var (
 			SELECT "id", "pop_name", "pop_year" FROM __v
 			WHERE __v."id" = __t."id"
 		)`
-	sqlSaveReturningCampaignRows = sqlSaveCampaignRows + sqlReturningCampaignRows
-	sqlGetCampaignRowsByID       = `
-		WITH __key AS (SELECT ROW_NUMBER() over () __idx, "id" FROM json_populate_recordset(null::"wise"."campaign", $1))
+	SQLSaveReturningCampaignRows = SQLSaveCampaignRows + SQLReturningCampaignRows
+	SQLGetCampaignRowsByID       = `
+		WITH __key AS (SELECT DISTINCT "id" FROM json_populate_recordset(null::"wise"."campaign", $1))
 		SELECT "id", "pop_name", "pop_year"
 		FROM __key JOIN "wise"."campaign" AS __t USING ("id")
-		ORDER BY __idx`
-	sqlUpdateCampaignRowsByID = `
+		`
+	SQLUpdateCampaignRowsByID = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."campaign", $1)),
 		  __key AS (SELECT id FROM json_populate_recordset(null::"wise"."campaign", $2))
 		UPDATE "wise"."campaign" AS __t
@@ -372,8 +369,8 @@ var (
 			COALESCE(__v."pop_year", __t."pop_year")
 		FROM __v)
 		FROM __key WHERE (__key."id" = __t."id")`
-	sqlDeleteCampaignRowsByID = `
+	SQLDeleteCampaignRowsByID = `
 		WITH __key AS (SELECT id FROM json_populate_recordset(null::"wise"."campaign", $1))
 		DELETE FROM "wise"."campaign" AS __t USING __key WHERE (__key."id" = __t."id")`
-	sqlDeleteReturningCampaignRowsByID = sqlDeleteCampaignRowsByID + sqlReturningCampaignRows
+	SQLDeleteReturningCampaignRowsByID = SQLDeleteCampaignRowsByID + SQLReturningCampaignRows
 )
