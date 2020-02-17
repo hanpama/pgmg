@@ -32,52 +32,19 @@ for more information about connection string parameters.
 ## How to use
 
 Generated PGMG models have no concrete dependency on any SQL driver,
-but depend on an interface `PGMGDatabase`.
+but depend on an interface `SQLHandle`.
 
 ```go
-// PGMGDatabase represents PostgresQL database
-type PGMGDatabase interface {
-	QueryScan(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
-	Exec(ctx context.Context, sql string, args ...interface{}) (int64, error)
+type SQLHandle interface {
+	QueryAndReceive(ctx context.Context, receiver func(int) []interface{}, sql string, args ...interface{}) (int, error)
+	ExecAndCount(ctx context.Context, sql string, args ...interface{}) (int64, error)
 }
 ```
 
-So your database connection should implement `PGMGDatabase` like below.
+So your database connection should implement `SQLHandle` like the [test database](https://github.com/hanpama/pgmg/tree/master/example/testdb.go).
 
 The `receiver func(int) []interface{}` parameter is a function returning pointers for `rows.Scan()`-like functions
 to scan data into.
-
-```go
-type testDB struct {
-	b *sql.DB
-}
-
-var _ example.PGMGDatabase = (*testDB)(nil)
-
-func (db *testDB) QueryScan(ctx context.Context, r func(int) []interface{}, sql string, args ...interface{}) (rowsReceived int, err error) {
-	rows, err := db.b.QueryContext(ctx, sql, args...)
-	if err != nil {
-		return rowsReceived, err
-	}
-	defer rows.Close()
-	for rows.Next() {
-		err = rows.Scan(r(rowsReceived)...)
-		if err != nil {
-			return rowsReceived, err
-		}
-		rowsReceived++
-	}
-	return rowsReceived, err
-}
-
-func (db *testDB) Exec(ctx context.Context, sql string, args ...interface{}) (int64, error) {
-	res, err := db.b.ExecContext(ctx, sql, args...)
-	if err != nil {
-		return 0, err
-	}
-	return res.RowsAffected()
-}
-```
 
 ## Full Example
 
