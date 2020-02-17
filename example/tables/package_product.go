@@ -46,38 +46,38 @@ type PackageProductPackageIDProductID struct {
 	ProductID int32  `json:"product_id"`
 }
 
-func (r *PackageProductRow) KeyPackageIDProductID() *PackageProductPackageIDProductID {
-	return &PackageProductPackageIDProductID{r.GetPackageID(), r.GetProductID()}
+func (r *PackageProductRow) KeyPackageIDProductID() PackageProductPackageIDProductID {
+	return PackageProductPackageIDProductID{r.GetPackageID(), r.GetProductID()}
 }
 
 // PackageProductRows represents multiple rows for table "package_product"
 type PackageProductRows []*PackageProductRow
 
-func (rs PackageProductRows) KeyPackageIDProductID() (keys []*PackageProductPackageIDProductID) {
-	keys = make([]*PackageProductPackageIDProductID, len(rs))
+func (rs PackageProductRows) KeyPackageIDProductID() (keys Keys) {
+	keys = make(Keys, len(rs))
 	for i, r := range rs {
 		keys[i] = r.KeyPackageIDProductID()
 	}
 	return keys
 }
 
-func (r *PackageProductRow) RefPackageID() *PackageID {
-	return &PackageID{r.GetPackageID()}
+func (r *PackageProductRow) RefPackageID() PackageID {
+	return PackageID{r.GetPackageID()}
 }
 
-func (rs PackageProductRows) RefPackageID() (keys []*PackageID) {
-	keys = make([]*PackageID, len(rs))
+func (rs PackageProductRows) RefPackageID() (keys Keys) {
+	keys = make(Keys, len(rs))
 	for i, r := range rs {
 		keys[i] = r.RefPackageID()
 	}
 	return keys
 }
-func (r *PackageProductRow) RefProductID() *ProductID {
-	return &ProductID{r.GetProductID()}
+func (r *PackageProductRow) RefProductID() ProductID {
+	return ProductID{r.GetProductID()}
 }
 
-func (rs PackageProductRows) RefProductID() (keys []*ProductID) {
-	keys = make([]*ProductID, len(rs))
+func (rs PackageProductRows) RefProductID() (keys Keys) {
+	keys = make(Keys, len(rs))
 	for i, r := range rs {
 		keys[i] = r.RefProductID()
 	}
@@ -118,15 +118,15 @@ func (t *PackageProductTable) Save(ctx context.Context, rows ...*PackageProductR
 	return SaveReturningPackageProductRows(ctx, t.h, rows...)
 }
 
-func (t *PackageProductTable) GetByPackageIDProductID(ctx context.Context, keys ...*PackageProductPackageIDProductID) (map[PackageProductPackageIDProductID]*PackageProductRow, error) {
+func (t *PackageProductTable) GetByPackageIDProductID(ctx context.Context, keys ...interface{}) (PackageProductRows, error) {
 	return GetPackageProductRowsByPackageIDProductID(ctx, t.h, keys...)
 }
 
-func (t *PackageProductTable) UpdateByPackageIDProductID(ctx context.Context, changeset PackageProductValues, keys ...*PackageProductPackageIDProductID) (int64, error) {
+func (t *PackageProductTable) UpdateByPackageIDProductID(ctx context.Context, changeset PackageProductValues, keys ...interface{}) (int64, error) {
 	return UpdatePackageProductRowsByPackageIDProductID(ctx, t.h, changeset, keys...)
 }
 
-func (t *PackageProductTable) DeleteByPackageIDProductID(ctx context.Context, keys ...*PackageProductPackageIDProductID) (int64, error) {
+func (t *PackageProductTable) DeleteByPackageIDProductID(ctx context.Context, keys ...interface{}) (int64, error) {
 	return DeletePackageProductRowsByPackageIDProductID(ctx, t.h, keys...)
 }
 
@@ -206,37 +206,16 @@ func SaveReturningPackageProductRows(ctx context.Context, db SQLHandle, inputs .
 }
 
 // GetPackageProductRowsByPackageIDProductID gets matching rows for given PackageIDProductID keys from table "package_product"
-func GetPackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHandle, keys ...*PackageProductPackageIDProductID) (rs map[PackageProductPackageIDProductID]*PackageProductRow, err error) {
-	ukm := make(map[PackageProductPackageIDProductID]struct{}, len(keys))
-	for _, k := range keys {
-		if k != nil {
-			ukm[*k] = struct{}{}
-		}
-	}
-	uks := make([]PackageProductPackageIDProductID, len(ukm))
-	i := 0
-	for k := range ukm {
-		uks[i] = k
-		i++
-	}
-
-	var r PackageProductRow
-	rs = make(map[PackageProductPackageIDProductID]*PackageProductRow, len(uks))
-	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
-		if i > 0 {
-			r := r
-			rs[*r.KeyPackageIDProductID()] = &r
-		}
-		return r.ReceiveRow()
-	}, SQLGetPackageProductRowsByPackageIDProductID, uks); err != nil {
+func GetPackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHandle, keys ...interface{}) (rows PackageProductRows, err error) {
+	rows = make(PackageProductRows, 0, len(keys))
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLGetPackageProductRowsByPackageIDProductID, Keys(keys)); err != nil {
 		return nil, formatError("GetPackageProductRowsByPackageIDProductID", err)
 	}
-	rs[*r.KeyPackageIDProductID()] = &r
-	return rs, nil
+	return rows, nil
 }
 
 // DeletePackageProductRowsByPackageIDProductID deletes matching rows by PackageProductPackageIDProductID keys from table "package_product"
-func DeletePackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHandle, keys ...*PackageProductPackageIDProductID) (numRows int64, err error) {
+func DeletePackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHandle, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLDeletePackageProductRowsByPackageIDProductID, keys)
 	if err != nil {
 		return numRows, formatError("DeletePackageProductRowsByPackageIDProductID", err)
@@ -245,7 +224,7 @@ func DeletePackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHan
 }
 
 // UpdatePackageProductRowsByPackageIDProductID deletes matching rows by PackageProductPackageIDProductID keys from table "package_product"
-func UpdatePackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHandle, changeset PackageProductValues, keys ...*PackageProductPackageIDProductID) (numRows int64, err error) {
+func UpdatePackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHandle, changeset PackageProductValues, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePackageProductRowsByPackageIDProductID, changeset, keys)
 	if err != nil {
 		return numRows, formatError("UpdatePackageProductRowsByPackageIDProductID", err)
@@ -253,18 +232,16 @@ func UpdatePackageProductRowsByPackageIDProductID(ctx context.Context, db SQLHan
 	return numRows, nil
 }
 
+// ReceiveRow returns all pointers of the column values for scanning
 func (r *PackageProductRow) ReceiveRow() []interface{} {
 	return []interface{}{&r.Data.PackageID, &r.Data.ProductID}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
 func (rs *PackageProductRows) ReceiveRows(i int) []interface{} {
-	if cap(*rs) <= i {
-		source := *rs
-		*rs = make(PackageProductRows, i+1)
-		copy(*rs, source)
-	}
-	if (*rs)[i] == nil {
+	if len(*rs) <= i {
+		*rs = append(*rs, new(PackageProductRow))
+	} else if (*rs)[i] == nil {
 		(*rs)[i] = new(PackageProductRow)
 	}
 	return (*rs)[i].ReceiveRow()
@@ -336,8 +313,7 @@ var (
 	SQLGetPackageProductRowsByPackageIDProductID = `
 		WITH __key AS (SELECT DISTINCT "package_id", "product_id" FROM json_populate_recordset(null::"wise"."package_product", $1))
 		SELECT "package_id", "product_id"
-		FROM __key JOIN "wise"."package_product" AS __t USING ("package_id", "product_id")
-		`
+		FROM __key JOIN "wise"."package_product" AS __t USING ("package_id", "product_id")`
 	SQLUpdatePackageProductRowsByPackageIDProductID = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."package_product", $1)),
 		  __key AS (SELECT package_id, product_id FROM json_populate_recordset(null::"wise"."package_product", $2))

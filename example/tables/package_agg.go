@@ -168,18 +168,16 @@ func CountPackageAggRows(ctx context.Context, db SQLHandle, cond PackageAggValue
 	return count, nil
 }
 
+// ReceiveRow returns all pointers of the column values for scanning
 func (r *PackageAggRow) ReceiveRow() []interface{} {
 	return []interface{}{&r.Data.ID, &r.Data.Name, &r.Data.Available, &r.Data.Count}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
 func (rs *PackageAggRows) ReceiveRows(i int) []interface{} {
-	if cap(*rs) <= i {
-		source := *rs
-		*rs = make(PackageAggRows, i+1)
-		copy(*rs, source)
-	}
-	if (*rs)[i] == nil {
+	if len(*rs) <= i {
+		*rs = append(*rs, new(PackageAggRow))
+	} else if (*rs)[i] == nil {
 		(*rs)[i] = new(PackageAggRow)
 	}
 	return (*rs)[i].ReceiveRow()

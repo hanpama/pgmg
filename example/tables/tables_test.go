@@ -22,17 +22,18 @@ func TestGetByID(t *testing.T) {
 	packages := tables.NewPackageTable(fxt.tdb)
 
 	row1, row2 := fxt.packageRows[0], fxt.packageRows[1]
-	rows, err := packages.GetByID(ctx, row1.KeyID(), row2.KeyID(), row1.KeyID())
+	keys := []interface{}{row1.KeyID(), row2.KeyID(), row1.KeyID()}
+	rows, err := packages.GetByID(ctx, keys...)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(rows) != 2 {
 		t.Fatalf("Unexpected length: %d", len(rows))
 	}
-	if !reflect.DeepEqual(row1, rows[*row1.KeyID()]) {
+	if !reflect.DeepEqual(row1, rows[0]) {
 		t.Fatal()
 	}
-	if !reflect.DeepEqual(row2, rows[*row2.KeyID()]) {
+	if !reflect.DeepEqual(row2, rows[1]) {
 		t.Fatal()
 	}
 }
@@ -195,14 +196,16 @@ func TestForeignKey(t *testing.T) {
 
 	pops := tables.NewPopTable(fxt.tdb)
 
-	rows, err := pops.GetByNameYear(ctx, fxt.campaignRows.RefPopNamePopYear()...)
+	fkeys := fxt.campaignRows.RefPopNamePopYear().Unique()
+
+	rows, err := pops.GetByNameYear(ctx, fkeys...)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(rows) != 1 {
+	if len(rows) != len(fkeys) {
 		t.Fatal()
 	}
-	if rows[*fxt.popRows[0].KeyNameYear()] == nil {
+	if rows[0] == nil {
 		t.Fatal()
 	}
 }

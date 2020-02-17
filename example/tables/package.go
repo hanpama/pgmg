@@ -58,15 +58,15 @@ type PackageID struct {
 	ID string `json:"id"`
 }
 
-func (r *PackageRow) KeyID() *PackageID {
-	return &PackageID{r.GetID()}
+func (r *PackageRow) KeyID() PackageID {
+	return PackageID{r.GetID()}
 }
 
 // PackageRows represents multiple rows for table "package"
 type PackageRows []*PackageRow
 
-func (rs PackageRows) KeyID() (keys []*PackageID) {
-	keys = make([]*PackageID, len(rs))
+func (rs PackageRows) KeyID() (keys Keys) {
+	keys = make(Keys, len(rs))
 	for i, r := range rs {
 		keys[i] = r.KeyID()
 	}
@@ -107,15 +107,15 @@ func (t *PackageTable) Save(ctx context.Context, rows ...*PackageRow) error {
 	return SaveReturningPackageRows(ctx, t.h, rows...)
 }
 
-func (t *PackageTable) GetByID(ctx context.Context, keys ...*PackageID) (map[PackageID]*PackageRow, error) {
+func (t *PackageTable) GetByID(ctx context.Context, keys ...interface{}) (PackageRows, error) {
 	return GetPackageRowsByID(ctx, t.h, keys...)
 }
 
-func (t *PackageTable) UpdateByID(ctx context.Context, changeset PackageValues, keys ...*PackageID) (int64, error) {
+func (t *PackageTable) UpdateByID(ctx context.Context, changeset PackageValues, keys ...interface{}) (int64, error) {
 	return UpdatePackageRowsByID(ctx, t.h, changeset, keys...)
 }
 
-func (t *PackageTable) DeleteByID(ctx context.Context, keys ...*PackageID) (int64, error) {
+func (t *PackageTable) DeleteByID(ctx context.Context, keys ...interface{}) (int64, error) {
 	return DeletePackageRowsByID(ctx, t.h, keys...)
 }
 
@@ -196,37 +196,16 @@ func SaveReturningPackageRows(ctx context.Context, db SQLHandle, inputs ...*Pack
 }
 
 // GetPackageRowsByID gets matching rows for given ID keys from table "package"
-func GetPackageRowsByID(ctx context.Context, db SQLHandle, keys ...*PackageID) (rs map[PackageID]*PackageRow, err error) {
-	ukm := make(map[PackageID]struct{}, len(keys))
-	for _, k := range keys {
-		if k != nil {
-			ukm[*k] = struct{}{}
-		}
-	}
-	uks := make([]PackageID, len(ukm))
-	i := 0
-	for k := range ukm {
-		uks[i] = k
-		i++
-	}
-
-	var r PackageRow
-	rs = make(map[PackageID]*PackageRow, len(uks))
-	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
-		if i > 0 {
-			r := r
-			rs[*r.KeyID()] = &r
-		}
-		return r.ReceiveRow()
-	}, SQLGetPackageRowsByID, uks); err != nil {
+func GetPackageRowsByID(ctx context.Context, db SQLHandle, keys ...interface{}) (rows PackageRows, err error) {
+	rows = make(PackageRows, 0, len(keys))
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLGetPackageRowsByID, Keys(keys)); err != nil {
 		return nil, formatError("GetPackageRowsByID", err)
 	}
-	rs[*r.KeyID()] = &r
-	return rs, nil
+	return rows, nil
 }
 
 // DeletePackageRowsByID deletes matching rows by PackageID keys from table "package"
-func DeletePackageRowsByID(ctx context.Context, db SQLHandle, keys ...*PackageID) (numRows int64, err error) {
+func DeletePackageRowsByID(ctx context.Context, db SQLHandle, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLDeletePackageRowsByID, keys)
 	if err != nil {
 		return numRows, formatError("DeletePackageRowsByID", err)
@@ -235,7 +214,7 @@ func DeletePackageRowsByID(ctx context.Context, db SQLHandle, keys ...*PackageID
 }
 
 // UpdatePackageRowsByID deletes matching rows by PackageID keys from table "package"
-func UpdatePackageRowsByID(ctx context.Context, db SQLHandle, changeset PackageValues, keys ...*PackageID) (numRows int64, err error) {
+func UpdatePackageRowsByID(ctx context.Context, db SQLHandle, changeset PackageValues, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLUpdatePackageRowsByID, changeset, keys)
 	if err != nil {
 		return numRows, formatError("UpdatePackageRowsByID", err)
@@ -243,18 +222,16 @@ func UpdatePackageRowsByID(ctx context.Context, db SQLHandle, changeset PackageV
 	return numRows, nil
 }
 
+// ReceiveRow returns all pointers of the column values for scanning
 func (r *PackageRow) ReceiveRow() []interface{} {
 	return []interface{}{&r.Data.ID, &r.Data.Name, &r.Data.Available}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
 func (rs *PackageRows) ReceiveRows(i int) []interface{} {
-	if cap(*rs) <= i {
-		source := *rs
-		*rs = make(PackageRows, i+1)
-		copy(*rs, source)
-	}
-	if (*rs)[i] == nil {
+	if len(*rs) <= i {
+		*rs = append(*rs, new(PackageRow))
+	} else if (*rs)[i] == nil {
 		(*rs)[i] = new(PackageRow)
 	}
 	return (*rs)[i].ReceiveRow()
@@ -333,8 +310,7 @@ var (
 	SQLGetPackageRowsByID       = `
 		WITH __key AS (SELECT DISTINCT "id" FROM json_populate_recordset(null::"wise"."package", $1))
 		SELECT "id", "name", "available"
-		FROM __key JOIN "wise"."package" AS __t USING ("id")
-		`
+		FROM __key JOIN "wise"."package" AS __t USING ("id")`
 	SQLUpdatePackageRowsByID = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."package", $1)),
 		  __key AS (SELECT id FROM json_populate_recordset(null::"wise"."package", $2))

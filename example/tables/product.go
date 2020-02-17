@@ -86,8 +86,8 @@ type ProductID struct {
 	ID int32 `json:"id"`
 }
 
-func (r *ProductRow) KeyID() *ProductID {
-	return &ProductID{r.GetID()}
+func (r *ProductRow) KeyID() ProductID {
+	return ProductID{r.GetID()}
 }
 
 // ProductAlias represents key defined by UNIQUE constraint "product_alias_key" for table "product"
@@ -95,23 +95,23 @@ type ProductAlias struct {
 	Alias string `json:"alias"`
 }
 
-func (r *ProductRow) KeyAlias() *ProductAlias {
-	return &ProductAlias{r.GetAlias()}
+func (r *ProductRow) KeyAlias() ProductAlias {
+	return ProductAlias{r.GetAlias()}
 }
 
 // ProductRows represents multiple rows for table "product"
 type ProductRows []*ProductRow
 
-func (rs ProductRows) KeyID() (keys []*ProductID) {
-	keys = make([]*ProductID, len(rs))
+func (rs ProductRows) KeyID() (keys Keys) {
+	keys = make(Keys, len(rs))
 	for i, r := range rs {
 		keys[i] = r.KeyID()
 	}
 	return keys
 }
 
-func (rs ProductRows) KeyAlias() (keys []*ProductAlias) {
-	keys = make([]*ProductAlias, len(rs))
+func (rs ProductRows) KeyAlias() (keys Keys) {
+	keys = make(Keys, len(rs))
 	for i, r := range rs {
 		keys[i] = r.KeyAlias()
 	}
@@ -152,27 +152,27 @@ func (t *ProductTable) Save(ctx context.Context, rows ...*ProductRow) error {
 	return SaveReturningProductRows(ctx, t.h, rows...)
 }
 
-func (t *ProductTable) GetByID(ctx context.Context, keys ...*ProductID) (map[ProductID]*ProductRow, error) {
+func (t *ProductTable) GetByID(ctx context.Context, keys ...interface{}) (ProductRows, error) {
 	return GetProductRowsByID(ctx, t.h, keys...)
 }
 
-func (t *ProductTable) UpdateByID(ctx context.Context, changeset ProductValues, keys ...*ProductID) (int64, error) {
+func (t *ProductTable) UpdateByID(ctx context.Context, changeset ProductValues, keys ...interface{}) (int64, error) {
 	return UpdateProductRowsByID(ctx, t.h, changeset, keys...)
 }
 
-func (t *ProductTable) DeleteByID(ctx context.Context, keys ...*ProductID) (int64, error) {
+func (t *ProductTable) DeleteByID(ctx context.Context, keys ...interface{}) (int64, error) {
 	return DeleteProductRowsByID(ctx, t.h, keys...)
 }
 
-func (t *ProductTable) GetByAlias(ctx context.Context, keys ...*ProductAlias) (map[ProductAlias]*ProductRow, error) {
+func (t *ProductTable) GetByAlias(ctx context.Context, keys ...interface{}) (ProductRows, error) {
 	return GetProductRowsByAlias(ctx, t.h, keys...)
 }
 
-func (t *ProductTable) UpdateByAlias(ctx context.Context, changeset ProductValues, keys ...*ProductAlias) (int64, error) {
+func (t *ProductTable) UpdateByAlias(ctx context.Context, changeset ProductValues, keys ...interface{}) (int64, error) {
 	return UpdateProductRowsByAlias(ctx, t.h, changeset, keys...)
 }
 
-func (t *ProductTable) DeleteByAlias(ctx context.Context, keys ...*ProductAlias) (int64, error) {
+func (t *ProductTable) DeleteByAlias(ctx context.Context, keys ...interface{}) (int64, error) {
 	return DeleteProductRowsByAlias(ctx, t.h, keys...)
 }
 
@@ -256,37 +256,16 @@ func SaveReturningProductRows(ctx context.Context, db SQLHandle, inputs ...*Prod
 }
 
 // GetProductRowsByID gets matching rows for given ID keys from table "product"
-func GetProductRowsByID(ctx context.Context, db SQLHandle, keys ...*ProductID) (rs map[ProductID]*ProductRow, err error) {
-	ukm := make(map[ProductID]struct{}, len(keys))
-	for _, k := range keys {
-		if k != nil {
-			ukm[*k] = struct{}{}
-		}
-	}
-	uks := make([]ProductID, len(ukm))
-	i := 0
-	for k := range ukm {
-		uks[i] = k
-		i++
-	}
-
-	var r ProductRow
-	rs = make(map[ProductID]*ProductRow, len(uks))
-	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
-		if i > 0 {
-			r := r
-			rs[*r.KeyID()] = &r
-		}
-		return r.ReceiveRow()
-	}, SQLGetProductRowsByID, uks); err != nil {
+func GetProductRowsByID(ctx context.Context, db SQLHandle, keys ...interface{}) (rows ProductRows, err error) {
+	rows = make(ProductRows, 0, len(keys))
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLGetProductRowsByID, Keys(keys)); err != nil {
 		return nil, formatError("GetProductRowsByID", err)
 	}
-	rs[*r.KeyID()] = &r
-	return rs, nil
+	return rows, nil
 }
 
 // DeleteProductRowsByID deletes matching rows by ProductID keys from table "product"
-func DeleteProductRowsByID(ctx context.Context, db SQLHandle, keys ...*ProductID) (numRows int64, err error) {
+func DeleteProductRowsByID(ctx context.Context, db SQLHandle, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLDeleteProductRowsByID, keys)
 	if err != nil {
 		return numRows, formatError("DeleteProductRowsByID", err)
@@ -295,7 +274,7 @@ func DeleteProductRowsByID(ctx context.Context, db SQLHandle, keys ...*ProductID
 }
 
 // UpdateProductRowsByID deletes matching rows by ProductID keys from table "product"
-func UpdateProductRowsByID(ctx context.Context, db SQLHandle, changeset ProductValues, keys ...*ProductID) (numRows int64, err error) {
+func UpdateProductRowsByID(ctx context.Context, db SQLHandle, changeset ProductValues, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLUpdateProductRowsByID, changeset, keys)
 	if err != nil {
 		return numRows, formatError("UpdateProductRowsByID", err)
@@ -304,37 +283,16 @@ func UpdateProductRowsByID(ctx context.Context, db SQLHandle, changeset ProductV
 }
 
 // GetProductRowsByAlias gets matching rows for given Alias keys from table "product"
-func GetProductRowsByAlias(ctx context.Context, db SQLHandle, keys ...*ProductAlias) (rs map[ProductAlias]*ProductRow, err error) {
-	ukm := make(map[ProductAlias]struct{}, len(keys))
-	for _, k := range keys {
-		if k != nil {
-			ukm[*k] = struct{}{}
-		}
-	}
-	uks := make([]ProductAlias, len(ukm))
-	i := 0
-	for k := range ukm {
-		uks[i] = k
-		i++
-	}
-
-	var r ProductRow
-	rs = make(map[ProductAlias]*ProductRow, len(uks))
-	if _, err = queryWithJSONArgs(ctx, db, func(i int) []interface{} {
-		if i > 0 {
-			r := r
-			rs[*r.KeyAlias()] = &r
-		}
-		return r.ReceiveRow()
-	}, SQLGetProductRowsByAlias, uks); err != nil {
+func GetProductRowsByAlias(ctx context.Context, db SQLHandle, keys ...interface{}) (rows ProductRows, err error) {
+	rows = make(ProductRows, 0, len(keys))
+	if _, err = queryWithJSONArgs(ctx, db, rows.ReceiveRows, SQLGetProductRowsByAlias, Keys(keys)); err != nil {
 		return nil, formatError("GetProductRowsByAlias", err)
 	}
-	rs[*r.KeyAlias()] = &r
-	return rs, nil
+	return rows, nil
 }
 
 // DeleteProductRowsByAlias deletes matching rows by ProductAlias keys from table "product"
-func DeleteProductRowsByAlias(ctx context.Context, db SQLHandle, keys ...*ProductAlias) (numRows int64, err error) {
+func DeleteProductRowsByAlias(ctx context.Context, db SQLHandle, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLDeleteProductRowsByAlias, keys)
 	if err != nil {
 		return numRows, formatError("DeleteProductRowsByAlias", err)
@@ -343,7 +301,7 @@ func DeleteProductRowsByAlias(ctx context.Context, db SQLHandle, keys ...*Produc
 }
 
 // UpdateProductRowsByAlias deletes matching rows by ProductAlias keys from table "product"
-func UpdateProductRowsByAlias(ctx context.Context, db SQLHandle, changeset ProductValues, keys ...*ProductAlias) (numRows int64, err error) {
+func UpdateProductRowsByAlias(ctx context.Context, db SQLHandle, changeset ProductValues, keys ...interface{}) (numRows int64, err error) {
 	numRows, err = execWithJSONArgs(ctx, db, SQLUpdateProductRowsByAlias, changeset, keys)
 	if err != nil {
 		return numRows, formatError("UpdateProductRowsByAlias", err)
@@ -351,18 +309,16 @@ func UpdateProductRowsByAlias(ctx context.Context, db SQLHandle, changeset Produ
 	return numRows, nil
 }
 
+// ReceiveRow returns all pointers of the column values for scanning
 func (r *ProductRow) ReceiveRow() []interface{} {
 	return []interface{}{&r.Data.ID, &r.Data.Price, &r.Data.Name, &r.Data.Alias, &r.Data.Stocked, &r.Data.Sold}
 }
 
 // ReceiveRows returns pointer slice to receive data for the row on index i
 func (rs *ProductRows) ReceiveRows(i int) []interface{} {
-	if cap(*rs) <= i {
-		source := *rs
-		*rs = make(ProductRows, i+1)
-		copy(*rs, source)
-	}
-	if (*rs)[i] == nil {
+	if len(*rs) <= i {
+		*rs = append(*rs, new(ProductRow))
+	} else if (*rs)[i] == nil {
 		(*rs)[i] = new(ProductRow)
 	}
 	return (*rs)[i].ReceiveRow()
@@ -465,8 +421,7 @@ var (
 	SQLGetProductRowsByID       = `
 		WITH __key AS (SELECT DISTINCT "id" FROM json_populate_recordset(null::"wise"."product", $1))
 		SELECT "id", "price", "name", "alias", "stocked", "sold"
-		FROM __key JOIN "wise"."product" AS __t USING ("id")
-		`
+		FROM __key JOIN "wise"."product" AS __t USING ("id")`
 	SQLUpdateProductRowsByID = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."product", $1)),
 		  __key AS (SELECT id FROM json_populate_recordset(null::"wise"."product", $2))
@@ -487,8 +442,7 @@ var (
 	SQLGetProductRowsByAlias          = `
 		WITH __key AS (SELECT DISTINCT "alias" FROM json_populate_recordset(null::"wise"."product", $1))
 		SELECT "id", "price", "name", "alias", "stocked", "sold"
-		FROM __key JOIN "wise"."product" AS __t USING ("alias")
-		`
+		FROM __key JOIN "wise"."product" AS __t USING ("alias")`
 	SQLUpdateProductRowsByAlias = `
 		WITH __v AS (SELECT * FROM json_populate_record(null::"wise"."product", $1)),
 		  __key AS (SELECT alias FROM json_populate_recordset(null::"wise"."product", $2))

@@ -19,7 +19,7 @@ func BenchmarkGetByID(b *testing.B) {
 	if err = fxt.tdb.Prepare(ctx, tables.SQLGetProductRowsByID); err != nil {
 		b.Fatal(err)
 	}
-	selectKeys := func(num int) (keys []*tables.ProductID) {
+	selectKeys := func(num int) (keys []interface{}) {
 		for i := 0; i < num; i++ {
 			keys = append(keys, fxt.productRows[i].KeyID())
 		}
