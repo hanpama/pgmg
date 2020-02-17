@@ -1,10 +1,10 @@
 package tables_test
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/hanpama/pgmg/example/tables"
 )
@@ -19,15 +19,9 @@ func BenchmarkGetByID(b *testing.B) {
 	if err = fxt.tdb.Prepare(ctx, tables.SQLGetProductRowsByID); err != nil {
 		b.Fatal(err)
 	}
-	selectKeys := func(num int) (keys []interface{}) {
-		for i := 0; i < num; i++ {
-			keys = append(keys, fxt.productRows[i].KeyID())
-		}
-		return keys
-	}
 	for _, rows := range []int{1, 2, 5, 20, 100} {
 		b.Run(fmt.Sprintf("%d Row", rows), func(b *testing.B) {
-			keys := selectKeys(rows)
+			keys := selectKeys(fxt, rows)
 			b.ResetTimer()
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
@@ -35,6 +29,53 @@ func BenchmarkGetByID(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
+			}
+		})
+	}
+}
+
+func BenchmarkGetByIDBaseline(b *testing.B) {
+	ctx := context.Background()
+	fxt, err := prepareTestEnv(ctx, "..")
+	if err != nil {
+		b.Fatal(err)
+	}
+	query := "SELECT * FROM wise.product WHERE id = any($1::int[])"
+	if err = fxt.tdb.Prepare(ctx, query); err != nil {
+		b.Fatal(err)
+	}
+
+	for _, rows := range []int{1, 2, 5, 20, 100} {
+		b.Run(fmt.Sprintf("%d Row", rows), func(b *testing.B) {
+			keys := selectKeys(fxt, rows)
+			var buff bytes.Buffer
+			buff.WriteRune('{')
+			for i, k := range keys {
+				if i > 0 {
+					buff.WriteRune(',')
+				}
+				buff.WriteString(fmt.Sprintf("%d", k.(tables.ProductID).ID))
+			}
+			buff.WriteRune('}')
+			arg1 := buff.String()
+
+			b.ResetTimer()
+			b.ReportAllocs()
+
+			for i := 0; i < b.N; i++ {
+				var datas []*tables.ProductData
+				rows, err := fxt.tdb.DB.QueryContext(ctx, query, arg1)
+				if err != nil {
+					b.Fatal(err)
+				}
+				for rows.Next() {
+					var d tables.ProductData
+					if err = rows.Scan(&d.ID, &d.Price, &d.Name, &d.Alias, &d.Stocked, &d.Sold); err != nil {
+						b.Fatal(err)
+					}
+					datas = append(datas, &d)
+				}
+				rows.Close()
 			}
 		})
 	}
@@ -100,18 +141,21 @@ func BenchmarkFindBase(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		var (
-			id      int
-			price   string
-			name    string
-			alias   string
-			stocked time.Time
-			sold    *time.Time
-		)
+		var datas []*tables.ProductData
 		for rows.Next() {
-			if err = rows.Scan(&id, &price, &name, &alias, &stocked, &sold); err != nil {
+			var d tables.ProductData
+			if err = rows.Scan(&d.ID, &d.Price, &d.Name, &d.Alias, &d.Stocked, &d.Sold); err != nil {
 				b.Fatal(err)
 			}
+			datas = append(datas, &d)
 		}
+		rows.Close()
 	}
+}
+
+func selectKeys(fxt *testEnv, num int) (keys []interface{}) {
+	for i := 0; i < num; i++ {
+		keys = append(keys, fxt.productRows[i].KeyID())
+	}
+	return keys
 }
